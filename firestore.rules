@@ -1,0 +1,83 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // IMPORTANT: replace this with your real admin email before deploying.
+    function isAdmin() {
+      return request.auth != null &&
+             request.auth.token.email == "zeeshantech56@gmail.com";
+    }
+
+    // Helper to get the current user's document
+    function getUserDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+
+    // Helper to check if the currently logged-in user is banned
+    function isBanned() {
+      return getUserDoc() != null && getUserDoc().data.get('banned', false) == true;
+    }
+
+    // Helper to check if the user is within their 72-hour trial or has an active subscription
+    function hasActiveAccess() {
+      return getUserDoc() != null && (
+        (
+          'createdAt' in getUserDoc().data && 
+          request.time.toMillis() < (getUserDoc().data.createdAt.toMillis() + 259200000)
+        ) 
+        ||
+        (
+          'subscriptionUntil' in getUserDoc().data && 
+          request.time.toMillis() < getUserDoc().data.subscriptionUntil.toMillis()
+        )
+      );
+    }
+
+    // Global platform configuration (e.g., announcements)
+    match /platformConfig/{document=**} {
+      // Anyone logged in can read the config. Only the admin can write to it.
+      allow read: if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    // shopNames registry to enforce unique shop names
+    match /shopNames/{shopNameId} {
+      allow read: if true;
+      allow create: if request.auth != null;
+      allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+    }
+
+    // users/{uid} — shop owner profiles
+    match /users/{userId} {
+      // A shop owner can read only their own profile.
+      // The admin can read every profile (for the admin panel).
+      allow read: if request.auth != null &&
+                     (request.auth.uid == userId || isAdmin());
+      // A shop owner can write their own profile, but Admin can also write to ANY profile (to ban them).
+      allow write: if request.auth != null && (request.auth.uid == userId || isAdmin());
+    }
+
+    // invoices/{invoiceId}
+    match /invoices/{invoiceId} {
+      // Anyone can read a SINGLE invoice by its exact ID (this powers the
+      // public wa.me link) but this does NOT allow listing/querying all
+      // invoices.
+      allow get: if true;
+
+      // Only the shop owner can create an invoice, and only tagged with
+      // their own UID — this is the multi-tenant write guarantee.
+      // PLUS: They cannot be banned AND must have an active trial or subscription.
+      allow create: if request.auth != null &&
+                       request.resource.data.shopId == request.auth.uid &&
+                       !isBanned() && hasActiveAccess();
+
+      // A shop owner can only list/query invoices that are their own.
+      // The admin bypasses this entirely and can list all invoices.
+      allow list: if request.auth != null &&
+                     (isAdmin() || resource.data.shopId == request.auth.uid);
+
+      allow update, delete: if request.auth != null &&
+                                (isAdmin() || (resource.data.shopId == request.auth.uid && !isBanned() && hasActiveAccess()));
+    }
+  }
+}

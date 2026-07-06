@@ -1,0 +1,193 @@
+// src/app/login/page.js
+// Shop owner signup + login. Creates a /users/{uid} profile doc on first signup.
+
+"use client";
+
+import { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import {
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+} from "firebase/auth";
+import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import { auth, db, googleProvider } from "@/lib/firebase";
+import Logo from "@/components/Logo";
+import Link from "next/link";
+
+function LoginForm() {
+  const searchParams = useSearchParams();
+  const [isSignup, setIsSignup] = useState(searchParams.get("signup") === "1");
+  const [shopName, setShopName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    setIsSignup(searchParams.get("signup") === "1");
+  }, [searchParams]);
+
+  // Creates the /users/{uid} profile doc — this is what makes the shop
+  // discoverable to the admin panel and holds shop-level settings.
+  const createUserProfile = async (uid, name, userEmail, phone) => {
+    await setDoc(
+      doc(db, "users", uid),
+      {
+        shopName: name || "My Shop",
+        email: userEmail,
+        phoneNumber: phone || "",
+        createdAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  };
+
+  const handleEmailAuth = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      if (isSignup) {
+        const cleanName = shopName.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+        if (!cleanName) throw new Error("Please enter a valid shop name.");
+        
+        const nameSnap = await getDoc(doc(db, "shopNames", cleanName));
+        if (nameSnap.exists()) {
+          throw new Error("This shop name is already taken. Please choose another one.");
+        }
+
+        const cred = await createUserWithEmailAndPassword(auth, email, password);
+        await createUserProfile(cred.user.uid, shopName, email, phoneNumber);
+        
+        await setDoc(doc(db, "shopNames", cleanName), { uid: cred.user.uid });
+      } else {
+        await signInWithEmailAndPassword(auth, email, password);
+      }
+      router.push("/dashboard");
+    } catch (err) {
+      setError(err.message.replace("Firebase: ", ""));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleAuth = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      await createUserProfile(result.user.uid, result.user.displayName, result.user.email);
+      router.push("/dashboard");
+    } catch (err) {
+      setError(err.message.replace("Firebase: ", ""));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-white px-4">
+      <div className="w-full max-w-sm">
+        <div className="mb-8 flex justify-center">
+          <Link href="/">
+            <Logo size="lg" />
+          </Link>
+        </div>
+
+        <div className="border border-gray-200 rounded-lg p-8 shadow-sm">
+          <p className="text-sm text-gray-500 mb-6 text-center">
+            {isSignup ? "Create your shop account" : "Sign in to your dashboard"}
+          </p>
+
+          {error && (
+            <div className="mb-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleEmailAuth} className="space-y-3">
+            {isSignup && (
+              <>
+                <input
+                  type="text"
+                  placeholder="Shop name"
+                  value={shopName}
+                  onChange={(e) => setShopName(e.target.value)}
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                  required
+                />
+                <input
+                  type="tel"
+                  placeholder="Phone number"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                  required
+                />
+              </>
+            )}
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+              required
+            />
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+              required
+              minLength={6}
+            />
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gray-900 text-white text-sm font-medium py-2 rounded hover:bg-gray-800 transition disabled:opacity-50"
+            >
+              {loading ? "Please wait..." : isSignup ? "Create account" : "Sign in"}
+            </button>
+          </form>
+
+          <div className="flex items-center gap-2 my-4">
+            <div className="h-px bg-gray-200 flex-1" />
+            <span className="text-xs text-gray-400">OR</span>
+            <div className="h-px bg-gray-200 flex-1" />
+          </div>
+
+          <button
+            onClick={handleGoogleAuth}
+            disabled={loading}
+            className="w-full border border-gray-300 text-sm font-medium py-2 rounded hover:bg-gray-50 transition"
+          >
+            Continue with Google
+          </button>
+
+          <p className="text-xs text-gray-500 mt-6 text-center">
+            {isSignup ? "Already have an account?" : "New shop owner?"}{" "}
+            <button
+              onClick={() => setIsSignup(!isSignup)}
+              className="text-gray-900 font-medium underline"
+            >
+              {isSignup ? "Sign in" : "Create account"}
+            </button>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  );
+}
