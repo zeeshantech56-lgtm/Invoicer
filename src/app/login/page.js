@@ -61,6 +61,7 @@ function LoginForm() {
         }
 
         const cred = await createUserWithEmailAndPassword(auth, email, password);
+        await cred.user.getIdToken(true); // Force token propagation to Firestore
         await createUserProfile(cred.user.uid, shopName, email, phoneNumber);
         
         await setDoc(doc(db, "shopNames", cleanName), { uid: cred.user.uid });
@@ -80,6 +81,7 @@ function LoginForm() {
     setLoading(true);
     try {
       const result = await signInWithPopup(auth, googleProvider);
+      await result.user.getIdToken(true); // Force token propagation to Firestore
       const snap = await getDoc(doc(db, "users", result.user.uid));
       if (snap.exists()) {
         router.push("/dashboard");
