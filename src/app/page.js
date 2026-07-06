@@ -64,18 +64,18 @@ export default function LandingPage() {
           <div className="flex items-center gap-3 sm:gap-5">
             <Link
               href="/pricing"
-              className="hidden sm:block text-sm font-medium text-gray-600 hover:text-gray-900"
+              className="text-xs sm:text-sm font-medium text-gray-600 hover:text-gray-900"
             >
               Pricing
             </Link>
             <Link
               href="/login"
-              className="hidden sm:block text-sm font-medium text-gray-600 hover:text-gray-900"
+              className="hidden sm:block text-xs sm:text-sm font-medium text-gray-600 hover:text-gray-900"
             >
               Sign in
             </Link>
             <Link
-              href="/login?signup=1"
+              href="/pricing"
               className="text-xs sm:text-sm font-medium bg-gray-900 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-gray-800 whitespace-nowrap"
             >
               Get started free
@@ -98,7 +98,7 @@ export default function LandingPage() {
         </p>
         <div className="mt-8 flex items-center justify-center gap-3">
           <Link
-            href="/login?signup=1"
+            href="/pricing"
             className="bg-gray-900 text-white px-6 py-3 rounded-md text-sm font-medium hover:bg-gray-800"
           >
             Create your shop account
@@ -151,7 +151,7 @@ export default function LandingPage() {
             Start your 3-day free trial instantly. No credit card required upfront.
           </p>
           <Link
-            href="/login?signup=1"
+            href="/pricing"
             className="mt-6 inline-block bg-gray-900 text-white px-6 py-3 rounded-md text-sm font-medium hover:bg-gray-800"
           >
             Get started free
