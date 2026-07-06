@@ -13,7 +13,7 @@ const emptyProduct = () => ({ name: "", qty: 1, price: "" });
 export default function InvoiceForm({ shopName }) {
   const { user } = useAuth();
   const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("91");
   const [products, setProducts] = useState([emptyProduct()]);
   const [submitting, setSubmitting] = useState(false);
   const [customFooter, setCustomFooter] = useState("");
@@ -49,7 +49,7 @@ export default function InvoiceForm({ shopName }) {
 
   const resetForm = () => {
     setCustomerName("");
-    setCustomerPhone("");
+    setCustomerPhone("91");
     setProducts([emptyProduct()]);
   };
 
@@ -142,7 +142,7 @@ export default function InvoiceForm({ shopName }) {
           <label className="block text-xs font-medium text-gray-600 mb-2">
             Products
           </label>
-          <div className="grid grid-cols-[1fr_56px_80px_28px] gap-2 text-[11px] text-gray-400 mb-1">
+          <div className="grid grid-cols-[1fr_48px_64px_24px] sm:grid-cols-[1fr_56px_80px_28px] gap-1 sm:gap-2 text-[11px] text-gray-400 mb-1">
             <span>Name</span>
             <span>Qty</span>
             <span>Price</span>
@@ -150,7 +150,7 @@ export default function InvoiceForm({ shopName }) {
           </div>
           <div className="space-y-2">
             {products.map((p, i) => (
-              <div key={i} className="grid grid-cols-[1fr_56px_80px_28px] gap-2 items-center">
+              <div key={i} className="grid grid-cols-[1fr_48px_64px_24px] sm:grid-cols-[1fr_56px_80px_28px] gap-1 sm:gap-2 items-center">
                 <input
                   type="text"
                   placeholder="Milk"

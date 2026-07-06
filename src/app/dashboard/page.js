@@ -127,37 +127,38 @@ function DashboardContent() {
           Warning: Payment due on {expiryDateString}. Please renew to avoid interruption.
         </div>
       )}
-      <header className="border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-6">
+      <header className="border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-y-3 gap-x-2">
+        <div className="flex items-center gap-2 sm:gap-6">
           <Link href="/">
             <Logo size="sm" />
           </Link>
           <Link
             href="/"
-            className="text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200 px-3 py-1.5 rounded-full hover:bg-gray-200 transition flex items-center gap-1"
+            className="text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200 px-2 sm:px-3 py-1.5 rounded-full hover:bg-gray-200 transition flex items-center gap-1 whitespace-nowrap"
           >
             <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
             </svg>
-            Back to Home
+            <span className="hidden sm:inline">Back to Home</span>
+            <span className="sm:hidden">Home</span>
           </Link>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2 sm:gap-4 ml-auto">
           {isAdmin && (
             <Link
               href="/admin"
-              className="text-sm text-gray-600 border border-gray-300 rounded px-3 py-1.5 hover:bg-gray-50"
+              className="text-xs sm:text-sm text-gray-600 border border-gray-300 rounded px-2 sm:px-3 py-1.5 hover:bg-gray-50 whitespace-nowrap"
             >
-              Admin panel
+              Admin
             </Link>
           )}
-          <div className="text-right">
+          <div className="text-right hidden sm:block">
             <p className="text-sm font-medium text-gray-900">{shopName || "Dashboard"}</p>
             <p className="text-xs text-gray-500">{user?.email}</p>
           </div>
           <button
             onClick={handleLogout}
-            className="text-sm text-gray-600 border border-gray-300 rounded px-3 py-1.5 hover:bg-gray-50"
+            className="text-xs sm:text-sm text-gray-600 border border-gray-300 rounded px-2 sm:px-3 py-1.5 hover:bg-gray-50 whitespace-nowrap"
           >
             Sign out
           </button>
