@@ -27,7 +27,7 @@ const features = [
   },
   {
     title: "Start Free, Grow Faster",
-    desc: "Enjoy a full 3-day free trial. Then, just Rs 500 for your first month and Rs 300 to renew. No hidden fees.",
+    desc: "Enjoy a full 3-day free trial. Then, just ₹150 per month. No hidden fees.",
   },
 ];
 
