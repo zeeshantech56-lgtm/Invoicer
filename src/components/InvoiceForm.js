@@ -13,7 +13,7 @@ const emptyProduct = () => ({ name: "", qty: 1, price: "" });
 export default function InvoiceForm({ shopName }) {
   const { user } = useAuth();
   const [customerName, setCustomerName] = useState("");
-  const [customerPhone, setCustomerPhone] = useState("91");
+  const [customerPhone, setCustomerPhone] = useState("");
   const [products, setProducts] = useState([emptyProduct()]);
   const [submitting, setSubmitting] = useState(false);
   const [customFooter, setCustomFooter] = useState("");
@@ -49,7 +49,7 @@ export default function InvoiceForm({ shopName }) {
 
   const resetForm = () => {
     setCustomerName("");
-    setCustomerPhone("91");
+    setCustomerPhone("");
     setProducts([emptyProduct()]);
   };
 
@@ -75,17 +75,19 @@ export default function InvoiceForm({ shopName }) {
       localStorage.setItem("invoicer_frequent_items", JSON.stringify(updatedItems));
       localStorage.setItem("invoicer_custom_footer", customFooter);
 
+      const fullPhone = "91" + customerPhone.replace(/\D/g, "");
+
       const { id, total: savedTotal } = await createInvoice({
         shopId: user.uid, // <-- critical multi-tenant key
         shopName: shopName || "My Shop",
         customerName,
-        customerPhone,
+        customerPhone: fullPhone,
         products: cleanProducts,
       });
 
       const siteUrl = typeof window !== "undefined" ? window.location.origin : "";
       const waUrl = buildWhatsAppUrl({
-        phone: customerPhone,
+        phone: fullPhone,
         shopName: shopName || "My Shop",
         customerName,
         products: cleanProducts,
@@ -126,38 +128,43 @@ export default function InvoiceForm({ shopName }) {
 
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-1">
-            WhatsApp number (with country code)
+            WhatsApp number
           </label>
-          <input
-            type="tel"
-            placeholder="e.g. 919876543210"
-            value={customerPhone}
-            onChange={(e) => setCustomerPhone(e.target.value)}
-            className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-            required
-          />
+          <div className="flex rounded border border-gray-300 focus-within:ring-2 focus-within:ring-gray-900">
+            <span className="inline-flex items-center px-2 sm:px-3 rounded-l border-r border-gray-300 bg-gray-50 text-gray-500 text-sm">
+              +91
+            </span>
+            <input
+              type="tel"
+              placeholder="9876543210"
+              value={customerPhone}
+              onChange={(e) => setCustomerPhone(e.target.value)}
+              className="flex-1 px-3 py-2 text-sm rounded-r focus:outline-none"
+              required
+            />
+          </div>
         </div>
 
         <div>
           <label className="block text-xs font-medium text-gray-600 mb-2">
             Products
           </label>
-          <div className="grid grid-cols-[1fr_48px_64px_24px] sm:grid-cols-[1fr_56px_80px_28px] gap-1 sm:gap-2 text-[11px] text-gray-400 mb-1">
-            <span>Name</span>
-            <span>Qty</span>
-            <span>Price</span>
-            <span></span>
+          <div className="flex gap-1 sm:gap-2 text-[11px] text-gray-400 mb-1">
+            <span className="flex-1">Name</span>
+            <span className="w-12 sm:w-16">Qty</span>
+            <span className="w-16 sm:w-20">Price</span>
+            <span className="w-6 sm:w-8"></span>
           </div>
           <div className="space-y-2">
             {products.map((p, i) => (
-              <div key={i} className="grid grid-cols-[1fr_48px_64px_24px] sm:grid-cols-[1fr_56px_80px_28px] gap-1 sm:gap-2 items-center">
+              <div key={i} className="flex gap-1 sm:gap-2 items-center">
                 <input
                   type="text"
                   placeholder="Milk"
                   value={p.name}
                   list="frequent-items"
                   onChange={(e) => updateProduct(i, "name", e.target.value)}
-                  className="border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                  className="flex-1 min-w-0 border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
                   required
                 />
                 <input
@@ -165,7 +172,7 @@ export default function InvoiceForm({ shopName }) {
                   min="1"
                   value={p.qty}
                   onChange={(e) => updateProduct(i, "qty", e.target.value)}
-                  className="border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                  className="w-12 sm:w-16 border border-gray-300 rounded px-1 sm:px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
                   required
                 />
                 <input
@@ -175,14 +182,14 @@ export default function InvoiceForm({ shopName }) {
                   placeholder="0"
                   value={p.price}
                   onChange={(e) => updateProduct(i, "price", e.target.value)}
-                  className="border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                  className="w-16 sm:w-20 border border-gray-300 rounded px-1 sm:px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => removeProduct(i)}
                   disabled={products.length === 1}
-                  className="h-8 w-7 flex items-center justify-center text-gray-400 hover:text-red-600 disabled:opacity-30"
+                  className="w-6 sm:w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-600 disabled:opacity-30"
                   aria-label="Remove product"
                 >
                   ×
