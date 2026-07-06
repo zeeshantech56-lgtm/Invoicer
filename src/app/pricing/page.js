@@ -111,6 +111,9 @@ export default function PricingPage() {
                 >
                   Start 3-Day Free Trial
                 </Link>
+                <p className="text-center text-xs text-gray-500 mt-3">
+                  No credit card required
+                </p>
               </div>
             </div>
           ))}
