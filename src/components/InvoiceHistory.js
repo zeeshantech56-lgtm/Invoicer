@@ -7,6 +7,15 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { subscribeToShopInvoices, RETENTION_DAYS, buildWhatsAppUrl } from "@/lib/invoices";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 export default function InvoiceHistory() {
   const { user } = useAuth();
@@ -127,8 +136,9 @@ export default function InvoiceHistory() {
     const invDate = inv.timestamp.toDate();
     
     if (chartFilter === "7d" || chartFilter === "30d") {
-      invDate.setHours(0, 0, 0, 0);
-      const dayMatch = chartData.find(c => c.key === invDate.getTime());
+      const d = new Date(invDate);
+      d.setHours(0, 0, 0, 0);
+      const dayMatch = chartData.find(c => c.key === d.getTime());
       if (dayMatch) {
         dayMatch.total += Number(inv.total || 0);
       }
@@ -185,20 +195,36 @@ export default function InvoiceHistory() {
               <option value="6m">Last 6 Months</option>
             </select>
           </div>
-          <div className="flex items-end justify-between h-24 gap-[2px] mt-8">
-            {chartData.map((d, i) => (
-              <div key={i} className="flex flex-col items-center flex-1 group relative">
-                <div 
-                  className="w-full bg-blue-100 rounded-t group-hover:bg-blue-200 transition-all"
-                  style={{ height: `${(d.total / maxChartValue) * 100}%`, minHeight: '4px' }}
-                ></div>
-                <span className="text-[9px] text-gray-400 mt-1">{d.label}</span>
-                {/* Tooltip */}
-                <div className="absolute -top-8 bg-gray-900 text-white text-[10px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap">
-                  ₹{d.total.toFixed(0)}
-                </div>
-              </div>
-            ))}
+          <div className="h-48 mt-8 w-full -ml-4">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
+                <XAxis 
+                  dataKey="label" 
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 10, fill: '#9ca3af' }}
+                  dy={10}
+                />
+                <YAxis 
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 10, fill: '#9ca3af' }}
+                  tickFormatter={(value) => `₹${value}`}
+                />
+                <RechartsTooltip 
+                  cursor={{ fill: '#f3f4f6' }}
+                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                  formatter={(value) => [`₹${Number(value).toFixed(2)}`, 'Sales']}
+                />
+                <Bar 
+                  dataKey="total" 
+                  fill="#111827" 
+                  radius={[4, 4, 0, 0]} 
+                  barSize={chartFilter === '30d' ? 6 : (chartFilter === '6m' ? 32 : 24)}
+                />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>
