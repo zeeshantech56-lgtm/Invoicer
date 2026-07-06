@@ -61,22 +61,22 @@ export default function LandingPage() {
       <nav className="border-b border-gray-100">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <Logo />
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-3 sm:gap-5">
             <Link
               href="/pricing"
-              className="text-sm font-medium text-gray-600 hover:text-gray-900"
+              className="hidden sm:block text-sm font-medium text-gray-600 hover:text-gray-900"
             >
               Pricing
             </Link>
             <Link
               href="/login"
-              className="text-sm font-medium text-gray-600 hover:text-gray-900"
+              className="hidden sm:block text-sm font-medium text-gray-600 hover:text-gray-900"
             >
               Sign in
             </Link>
             <Link
               href="/login?signup=1"
-              className="text-sm font-medium bg-gray-900 text-white px-4 py-2 rounded-md hover:bg-gray-800"
+              className="text-xs sm:text-sm font-medium bg-gray-900 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-md hover:bg-gray-800 whitespace-nowrap"
             >
               Get started free
             </Link>
