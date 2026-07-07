@@ -210,62 +210,81 @@ export default function InvoiceForm({ shopName }) {
           <label className="block text-xs font-medium text-gray-600 mb-2">
             Products
           </label>
-          <div className="flex gap-1 sm:gap-2 text-[11px] text-gray-400 mb-1">
+          <div className="hidden sm:flex gap-2 text-[11px] text-gray-400 mb-1">
             <span className="flex-1">Name</span>
-            <span className="w-12 sm:w-16">Qty</span>
-            <span className="w-16 sm:w-20">Rate</span>
-            <span className="w-16 sm:w-20 text-right">Total</span>
-            <span className="w-6 sm:w-8"></span>
+            <span className="w-16">Qty</span>
+            <span className="w-20">Rate</span>
+            <span className="w-20 text-right">Total</span>
+            <span className="w-8"></span>
           </div>
-          <div className="space-y-2">
+          <div className="space-y-3 sm:space-y-2">
             {products.map((p, i) => (
-              <div key={i} className="flex gap-1 sm:gap-2 items-center">
-                <input
-                  type="text"
-                  placeholder="Milk"
-                  value={p.name}
-                  list="frequent-items"
-                  onChange={(e) => updateProduct(i, "name", e.target.value)}
-                  className="flex-1 min-w-0 border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-                  required
-                />
-                <input
-                  type="number"
-                  min="1"
-                  value={p.qty}
-                  onChange={(e) => updateProduct(i, "qty", e.target.value)}
-                  className="w-12 sm:w-16 border border-gray-300 rounded px-1 sm:px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-                  required
-                />
-                <input
-                  type="number"
-                  min="0"
-                  step="0.01"
-                  placeholder="0"
-                  value={p.price}
-                  onChange={(e) => updateProduct(i, "price", e.target.value)}
-                  className="w-16 sm:w-20 border border-gray-300 rounded px-1 sm:px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
-                  required
-                />
-                <div className="w-16 sm:w-20 text-right text-sm font-medium text-gray-900 flex items-center justify-end">
-                  ₹{((Number(p.qty) || 0) * (Number(p.price) || 0)).toFixed(2)}
+              <div key={i} className="flex flex-col sm:flex-row gap-2 sm:items-center bg-gray-50 sm:bg-transparent p-3 sm:p-0 rounded-lg sm:rounded-none border border-gray-100 sm:border-0">
+                <div className="flex gap-2 w-full sm:flex-1">
+                  <input
+                    type="text"
+                    placeholder="Item name"
+                    value={p.name}
+                    list="frequent-items"
+                    onChange={(e) => updateProduct(i, "name", e.target.value)}
+                    className="flex-1 min-w-0 border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeProduct(i)}
+                    disabled={products.length === 1}
+                    className="w-8 h-8 flex sm:hidden items-center justify-center text-gray-400 hover:text-red-600 disabled:opacity-30 bg-white rounded border border-gray-200"
+                    aria-label="Remove product"
+                  >
+                    ×
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => removeProduct(i)}
-                  disabled={products.length === 1}
-                  className="w-6 sm:w-8 h-8 flex items-center justify-center text-gray-400 hover:text-red-600 disabled:opacity-30"
-                  aria-label="Remove product"
-                >
-                  ×
-                </button>
+                <div className="flex gap-2 items-center w-full sm:w-auto">
+                  <div className="flex-1 sm:w-16 flex items-center gap-2 sm:gap-0">
+                    <span className="text-[10px] text-gray-500 sm:hidden w-8">Qty</span>
+                    <input
+                      type="number"
+                      min="1"
+                      value={p.qty}
+                      onChange={(e) => updateProduct(i, "qty", e.target.value)}
+                      className="w-full sm:w-16 border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white"
+                      required
+                    />
+                  </div>
+                  <div className="flex-1 sm:w-20 flex items-center gap-2 sm:gap-0">
+                    <span className="text-[10px] text-gray-500 sm:hidden w-8">Rate</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0"
+                      value={p.price}
+                      onChange={(e) => updateProduct(i, "price", e.target.value)}
+                      className="w-full sm:w-20 border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white"
+                      required
+                    />
+                  </div>
+                  <div className="w-20 sm:w-20 text-right text-sm font-medium text-gray-900 flex items-center justify-end">
+                    ₹{((Number(p.qty) || 0) * (Number(p.price) || 0)).toFixed(2)}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => removeProduct(i)}
+                    disabled={products.length === 1}
+                    className="w-8 h-8 hidden sm:flex items-center justify-center text-gray-400 hover:text-red-600 disabled:opacity-30"
+                    aria-label="Remove product"
+                  >
+                    ×
+                  </button>
+                </div>
               </div>
             ))}
           </div>
           <button
             type="button"
             onClick={addProduct}
-            className="mt-2 w-full text-sm border border-dashed border-gray-300 rounded py-1.5 text-gray-500 hover:border-gray-400 hover:text-gray-700"
+            className="mt-3 w-full text-sm border border-dashed border-gray-300 rounded py-2 text-gray-500 hover:border-gray-400 hover:text-gray-700"
           >
             + Add another product
           </button>
