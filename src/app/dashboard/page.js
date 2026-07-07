@@ -144,6 +144,12 @@ function DashboardContent() {
           </Link>
         </div>
         <div className="flex items-center gap-2 sm:gap-4 ml-auto">
+          <Link
+            href="/dashboard/inventory"
+            className="text-xs sm:text-sm text-gray-600 border border-gray-300 rounded px-2 sm:px-3 py-1.5 hover:bg-gray-50 whitespace-nowrap"
+          >
+            Inventory
+          </Link>
           {isAdmin && (
             <Link
               href="/admin"

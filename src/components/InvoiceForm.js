@@ -7,6 +7,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { createInvoice, buildWhatsAppUrl } from "@/lib/invoices";
+import { getUserProducts } from "@/lib/inventory";
 
 const emptyProduct = () => ({ name: "", qty: 1, price: "" });
 
@@ -19,6 +20,8 @@ export default function InvoiceForm({ shopName }) {
   const [customFooter, setCustomFooter] = useState("");
   const [frequentItems, setFrequentItems] = useState([]);
 
+  const [inventoryProducts, setInventoryProducts] = useState([]);
+
   useEffect(() => {
     // Load saved preferences on mount
     const savedFooter = localStorage.getItem("invoicer_custom_footer");
@@ -30,7 +33,13 @@ export default function InvoiceForm({ shopName }) {
         setFrequentItems(JSON.parse(savedItems));
       } catch (e) {}
     }
-  }, []);
+
+    if (user) {
+      getUserProducts(user.uid).then(products => {
+        setInventoryProducts(products);
+      }).catch(console.error);
+    }
+  }, [user]);
 
   const total = products.reduce(
     (sum, p) => sum + (Number(p.qty) || 0) * (Number(p.price) || 0),
@@ -39,8 +48,30 @@ export default function InvoiceForm({ shopName }) {
 
   const updateProduct = (index, field, value) => {
     setProducts((prev) =>
-      prev.map((p, i) => (i === index ? { ...p, [field]: value } : p))
+      prev.map((p, i) => {
+        if (i === index) {
+          const updated = { ...p, [field]: value };
+          if (field === "name") {
+            const matchedProduct = inventoryProducts.find(ip => ip.name.toLowerCase() === value.toLowerCase());
+            if (matchedProduct && (!p.price || p.price === "" || p.price === "0" || p.price === 0)) {
+              updated.price = matchedProduct.price;
+            }
+          }
+          return updated;
+        }
+        return p;
+      })
     );
+  };
+
+  const addInventoryProduct = (invProduct) => {
+    const emptyIndex = products.findIndex(p => p.name.trim() === "" && (!p.price || p.price === "" || p.price === "0" || p.price === 0));
+    
+    if (emptyIndex !== -1) {
+      setProducts(prev => prev.map((p, i) => i === emptyIndex ? { name: invProduct.name, qty: 1, price: invProduct.price } : p));
+    } else {
+      setProducts(prev => [...prev, { name: invProduct.name, qty: 1, price: invProduct.price }]);
+    }
   };
 
   const addProduct = () => setProducts((prev) => [...prev, emptyProduct()]);
@@ -145,7 +176,27 @@ export default function InvoiceForm({ shopName }) {
           </div>
         </div>
 
-        <div>
+        {inventoryProducts.length > 0 && (
+          <div className="pt-2">
+            <label className="block text-xs font-medium text-gray-600 mb-2">
+              Quick Add from Inventory
+            </label>
+            <div className="flex flex-wrap gap-2">
+              {inventoryProducts.map((ip) => (
+                <button
+                  key={ip.id}
+                  type="button"
+                  onClick={() => addInventoryProduct(ip)}
+                  className="bg-gray-50 hover:bg-gray-100 text-gray-800 text-xs py-1.5 px-3 rounded-full border border-gray-200 transition whitespace-nowrap"
+                >
+                  {ip.name} <span className="text-gray-400 ml-1">₹{ip.price}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="pt-2">
           <label className="block text-xs font-medium text-gray-600 mb-2">
             Products
           </label>
@@ -206,9 +257,13 @@ export default function InvoiceForm({ shopName }) {
           </button>
           
           <datalist id="frequent-items">
-            {frequentItems.map((item, idx) => (
-              <option key={idx} value={item} />
+            {inventoryProducts.map((p) => (
+              <option key={p.id} value={p.name} />
             ))}
+            {frequentItems.map((item, idx) => {
+              if (inventoryProducts.some(p => p.name.toLowerCase() === item.toLowerCase())) return null;
+              return <option key={`freq-${idx}`} value={item} />;
+            })}
           </datalist>
         </div>
 
