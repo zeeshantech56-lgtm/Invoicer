@@ -23,7 +23,7 @@ service cloud.firestore {
       return getUserDoc() != null && (
         (
           'createdAt' in getUserDoc().data && 
-          request.time.toMillis() < (getUserDoc().data.createdAt.toMillis() + 259200000)
+          request.time.toMillis() < (getUserDoc().data.createdAt.toMillis() + 31536000000)
         ) 
         ||
         (
