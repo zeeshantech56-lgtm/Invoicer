@@ -66,7 +66,7 @@ export default function InvoiceForm({ shopName }) {
 
   const addInventoryProduct = (invProduct) => {
     // Check if product already exists in the invoice
-    const existingIndex = products.findIndex(p => p.name.toLowerCase() === invProduct.name.toLowerCase());
+    const existingIndex = products.findIndex(p => p.name.trim().toLowerCase() === invProduct.name.trim().toLowerCase());
     
     if (existingIndex !== -1) {
       // Increment quantity of existing row
