@@ -3,6 +3,7 @@
 
 import Link from "next/link";
 import Logo from "@/components/Logo";
+import InstallAppButton from "@/components/InstallAppButton";
 
 const features = [
   {
@@ -96,7 +97,8 @@ export default function LandingPage() {
           and deliver invoices instantly over WhatsApp — with a shareable link
           the customer can always come back to.
         </p>
-        <div className="mt-8 flex items-center justify-center gap-3">
+        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <InstallAppButton />
           <Link
             href="/pricing"
             className="bg-gray-900 text-white px-6 py-3 rounded-md text-sm font-medium hover:bg-gray-800"
