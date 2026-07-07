@@ -213,7 +213,8 @@ export default function InvoiceForm({ shopName }) {
           <div className="flex gap-1 sm:gap-2 text-[11px] text-gray-400 mb-1">
             <span className="flex-1">Name</span>
             <span className="w-12 sm:w-16">Qty</span>
-            <span className="w-16 sm:w-20">Price</span>
+            <span className="w-16 sm:w-20">Rate</span>
+            <span className="w-16 sm:w-20 text-right">Total</span>
             <span className="w-6 sm:w-8"></span>
           </div>
           <div className="space-y-2">
@@ -246,6 +247,9 @@ export default function InvoiceForm({ shopName }) {
                   className="w-16 sm:w-20 border border-gray-300 rounded px-1 sm:px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
                   required
                 />
+                <div className="w-16 sm:w-20 text-right text-sm font-medium text-gray-900 flex items-center justify-end">
+                  ₹{((Number(p.qty) || 0) * (Number(p.price) || 0)).toFixed(2)}
+                </div>
                 <button
                   type="button"
                   onClick={() => removeProduct(i)}
