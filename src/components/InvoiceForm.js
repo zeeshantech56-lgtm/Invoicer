@@ -65,6 +65,16 @@ export default function InvoiceForm({ shopName }) {
   };
 
   const addInventoryProduct = (invProduct) => {
+    // Check if product already exists in the invoice
+    const existingIndex = products.findIndex(p => p.name.toLowerCase() === invProduct.name.toLowerCase());
+    
+    if (existingIndex !== -1) {
+      // Increment quantity of existing row
+      setProducts(prev => prev.map((p, i) => i === existingIndex ? { ...p, qty: Number(p.qty) + 1 } : p));
+      return;
+    }
+
+    // Find empty row
     const emptyIndex = products.findIndex(p => p.name.trim() === "" && (!p.price || p.price === "" || p.price === "0" || p.price === 0));
     
     if (emptyIndex !== -1) {
