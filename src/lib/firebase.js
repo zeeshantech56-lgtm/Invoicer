@@ -2,7 +2,7 @@
 // Initializes Firebase App, Auth, and Firestore once (safe for Next.js hot-reload).
 
 import { initializeApp, getApps, getApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, setPersistence, browserLocalPersistence } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
@@ -17,6 +17,9 @@ const firebaseConfig = {
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
 export const auth = getAuth(app);
+// Explicitly enforce local persistence to prevent session drops in mobile PWAs
+setPersistence(auth, browserLocalPersistence).catch(console.error);
+
 export const db = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
 

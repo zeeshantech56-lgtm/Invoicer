@@ -7,6 +7,12 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata = {
   title: "Invoicer — Invoicing and WhatsApp billing for shops",
   description: "Send professional invoices to customers over WhatsApp in seconds.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "Invoicer",
+  },
 };
 
 export default function RootLayout({ children }) {

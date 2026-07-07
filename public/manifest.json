@@ -1,0 +1,17 @@
+{
+  "name": "Invoicer",
+  "short_name": "Invoicer",
+  "description": "Send professional invoices to customers over WhatsApp in seconds.",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#16a34a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ]
+}
