@@ -13,24 +13,23 @@ service cloud.firestore {
       return get(/databases/$(database)/documents/users/$(request.auth.uid));
     }
 
-    // Helper to check if the currently logged-in user is banned
-    function isBanned() {
-      return getUserDoc() != null && getUserDoc().data.get('banned', false) == true;
-    }
-
-    // Helper to check if the user is within their 72-hour trial or has an active subscription
-    function hasActiveAccess() {
-      return getUserDoc() != null && (
+    // Checks if the user is banned and has active access (72-hour trial or subscription)
+    // IMPORTANT: The 72-hour duration (259200000 ms) MUST match TRIAL_DURATION_MS in src/lib/constants.js
+    function canWriteInvoice() {
+      let userDoc = getUserDoc();
+      let isBanned = userDoc != null && userDoc.data.get('banned', false) == true;
+      let hasActiveAccess = userDoc != null && (
         (
-          'createdAt' in getUserDoc().data && 
-          request.time.toMillis() < (getUserDoc().data.createdAt.toMillis() + 31536000000)
+          'createdAt' in userDoc.data && 
+          request.time.toMillis() < (userDoc.data.createdAt.toMillis() + 259200000)
         ) 
         ||
         (
-          'subscriptionUntil' in getUserDoc().data && 
-          request.time.toMillis() < getUserDoc().data.subscriptionUntil.toMillis()
+          'subscriptionUntil' in userDoc.data && 
+          request.time.toMillis() < userDoc.data.subscriptionUntil.toMillis()
         )
       );
+      return !isBanned && hasActiveAccess;
     }
 
     // Global platform configuration (e.g., announcements)
@@ -74,7 +73,9 @@ service cloud.firestore {
       // PLUS: They cannot be banned AND must have an active trial or subscription.
       allow create: if request.auth != null &&
                        request.resource.data.shopId == request.auth.uid &&
-                       !isBanned() && hasActiveAccess();
+                       canWriteInvoice() &&
+                       request.resource.data.total >= 0 &&
+                       (request.resource.data.products.size() > 0 ? request.resource.data.total > 0 : true);
 
       // A shop owner can only list/query invoices that are their own.
       // The admin bypasses this entirely and can list all invoices.
@@ -82,7 +83,7 @@ service cloud.firestore {
                      (isAdmin() || resource.data.shopId == request.auth.uid);
 
       allow update, delete: if request.auth != null &&
-                                (isAdmin() || (resource.data.shopId == request.auth.uid && !isBanned() && hasActiveAccess()));
+                                (isAdmin() || (resource.data.shopId == request.auth.uid && canWriteInvoice()));
     }
   }
 }

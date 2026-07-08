@@ -106,6 +106,12 @@ export default function InvoiceForm({ shopName }) {
         price: Number(p.price) || 0,
       }));
 
+      if (cleanProducts.some(p => p.qty <= 0 || p.price <= 0)) {
+        alert("Quantity and price must be greater than zero.");
+        setSubmitting(false);
+        return;
+      }
+
       // Update frequent items in local storage
       const newItems = new Set(frequentItems);
       cleanProducts.forEach(p => {
@@ -241,7 +247,7 @@ export default function InvoiceForm({ shopName }) {
                   </button>
                 </div>
                 <div className="flex gap-2 items-center w-full sm:w-auto">
-                  <div className="flex-1 sm:w-16 flex items-center gap-2 sm:gap-0">
+                  <div className="flex-1 sm:flex-none sm:w-16 flex items-center gap-2 sm:gap-0">
                     <span className="text-[10px] text-gray-500 sm:hidden w-8">Qty</span>
                     <input
                       type="number"
@@ -252,7 +258,7 @@ export default function InvoiceForm({ shopName }) {
                       required
                     />
                   </div>
-                  <div className="flex-1 sm:w-20 flex items-center gap-2 sm:gap-0">
+                  <div className="flex-1 sm:flex-none sm:w-20 flex items-center gap-2 sm:gap-0">
                     <span className="text-[10px] text-gray-500 sm:hidden w-8">Rate</span>
                     <input
                       type="number"
@@ -265,14 +271,14 @@ export default function InvoiceForm({ shopName }) {
                       required
                     />
                   </div>
-                  <div className="w-20 sm:w-20 text-right text-sm font-medium text-gray-900 flex items-center justify-end">
+                  <div className="w-20 sm:w-20 sm:flex-none text-right text-sm font-medium text-gray-900 flex items-center justify-end">
                     ₹{((Number(p.qty) || 0) * (Number(p.price) || 0)).toFixed(2)}
                   </div>
                   <button
                     type="button"
                     onClick={() => removeProduct(i)}
                     disabled={products.length === 1}
-                    className="w-8 h-8 hidden sm:flex items-center justify-center text-gray-400 hover:text-red-600 disabled:opacity-30"
+                    className="w-8 h-8 sm:flex-none hidden sm:flex items-center justify-center text-gray-400 hover:text-red-600 disabled:opacity-30"
                     aria-label="Remove product"
                   >
                     ×

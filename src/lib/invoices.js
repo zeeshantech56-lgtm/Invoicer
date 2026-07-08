@@ -54,7 +54,7 @@ export async function getInvoiceById(invoiceId) {
   return { id: snap.id, ...snap.data() };
 }
 
-// Live-subscribes to a shop's own invoices from the last 30 days only.
+// Live-subscribes to a shop's own invoices from the last 180 days only.
 export function subscribeToShopInvoices(shopId, callback, onError) {
   const q = query(
     collection(db, "invoices"),
@@ -80,7 +80,10 @@ export function subscribeToAllInvoices(callback) {
 // Builds the WhatsApp deep link. Message includes a public link to the
 // hosted invoice page so the customer can view a clean, permanent copy.
 export function buildWhatsAppUrl({ phone, shopName, customerName, products, total, invoiceId, siteUrl, customFooter }) {
-  const cleanedPhone = phone.replace(/[^0-9]/g, "");
+  let cleanedPhone = phone.replace(/[^0-9]/g, "");
+  if (!cleanedPhone.startsWith("91") && cleanedPhone.length === 10) {
+    cleanedPhone = "91" + cleanedPhone;
+  }
   const lines = products.map((p) => `${p.qty}x ${p.name} - Rs ${(p.qty * p.price).toFixed(2)}`);
   const invoiceLink = `${siteUrl}/invoice/${invoiceId}`;
 

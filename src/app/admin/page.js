@@ -16,6 +16,7 @@ import { subscribeToAllInvoices } from "@/lib/invoices";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Logo from "@/components/Logo";
 import Link from "next/link";
+import { TRIAL_DURATION_MS } from "@/lib/constants";
 
 function AdminContent() {
   const { user } = useAuth();
@@ -120,7 +121,7 @@ function AdminContent() {
         inv.id,
         `"${(inv.shopName || shopNameById[inv.shopId] || "").replace(/"/g, '""')}"`,
         `"${(inv.customerName || "").replace(/"/g, '""')}"`,
-        inv.customerPhone,
+        `"${inv.customerPhone || ""}"`,
         inv.total || 0,
         `"${date}"`
       ].join(",");
@@ -141,7 +142,7 @@ function AdminContent() {
   const getShopStatus = (shop) => {
     const now = Date.now();
     const createdAt = shop.createdAt?.toMillis() || now;
-    const trialEnd = createdAt + (72 * 60 * 60 * 1000);
+    const trialEnd = createdAt + TRIAL_DURATION_MS;
     const subUntil = shop.subscriptionUntil?.toMillis() || null;
     
     if (subUntil && subUntil > now) {

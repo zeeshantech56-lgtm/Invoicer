@@ -10,7 +10,7 @@ import {
   signInWithEmailAndPassword,
   signInWithPopup,
 } from "firebase/auth";
-import { doc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
+import { doc, setDoc, getDoc, serverTimestamp, runTransaction } from "firebase/firestore";
 import { auth, db, googleProvider } from "@/lib/firebase";
 import Logo from "@/components/Logo";
 import Link from "next/link";
@@ -31,20 +31,7 @@ function LoginForm() {
     setIsSignup(searchParams.get("signup") === "1");
   }, [searchParams]);
 
-  // Creates the /users/{uid} profile doc — this is what makes the shop
-  // discoverable to the admin panel and holds shop-level settings.
-  const createUserProfile = async (uid, name, userEmail, phone) => {
-    await setDoc(
-      doc(db, "users", uid),
-      {
-        shopName: name || "My Shop",
-        email: userEmail,
-        phoneNumber: phone || "",
-        createdAt: serverTimestamp(),
-      },
-      { merge: true }
-    );
-  };
+
 
   const handleEmailAuth = async (e) => {
     e.preventDefault();
@@ -55,16 +42,31 @@ function LoginForm() {
         const cleanName = shopName.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
         if (!cleanName) throw new Error("Please enter a valid shop name.");
         
-        const nameSnap = await getDoc(doc(db, "shopNames", cleanName));
-        if (nameSnap.exists()) {
-          throw new Error("This shop name is already taken. Please choose another one.");
-        }
-
         const cred = await createUserWithEmailAndPassword(auth, email, password);
-        await cred.user.getIdToken(true); // Force token propagation to Firestore
-        await createUserProfile(cred.user.uid, shopName, email, phoneNumber);
-        
-        await setDoc(doc(db, "shopNames", cleanName), { uid: cred.user.uid });
+        try {
+          await cred.user.getIdToken(true); // Force token propagation to Firestore
+          await runTransaction(db, async (transaction) => {
+            const nameRef = doc(db, "shopNames", cleanName);
+            const nameSnap = await transaction.get(nameRef);
+            if (nameSnap.exists()) {
+              throw new Error("This shop name is already taken. Please choose another one.");
+            }
+            transaction.set(nameRef, { uid: cred.user.uid });
+            transaction.set(
+              doc(db, "users", cred.user.uid),
+              {
+                shopName: shopName || "My Shop",
+                email: email,
+                phoneNumber: phoneNumber || "",
+                createdAt: serverTimestamp(),
+              },
+              { merge: true }
+            );
+          });
+        } catch (err) {
+          if (cred.user) await cred.user.delete();
+          throw err;
+        }
       } else {
         await signInWithEmailAndPassword(auth, email, password);
       }
@@ -104,13 +106,24 @@ function LoginForm() {
       const cleanName = shopName.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
       if (!cleanName) throw new Error("Please enter a valid shop name.");
       
-      const nameSnap = await getDoc(doc(db, "shopNames", cleanName));
-      if (nameSnap.exists()) {
-        throw new Error("This shop name is already taken. Please choose another one.");
-      }
-
-      await createUserProfile(googleUser.uid, shopName, googleUser.email, phoneNumber);
-      await setDoc(doc(db, "shopNames", cleanName), { uid: googleUser.uid });
+      await runTransaction(db, async (transaction) => {
+        const nameRef = doc(db, "shopNames", cleanName);
+        const nameSnap = await transaction.get(nameRef);
+        if (nameSnap.exists()) {
+          throw new Error("This shop name is already taken. Please choose another one.");
+        }
+        transaction.set(nameRef, { uid: googleUser.uid });
+        transaction.set(
+          doc(db, "users", googleUser.uid),
+          {
+            shopName: shopName || "My Shop",
+            email: googleUser.email,
+            phoneNumber: phoneNumber || "",
+            createdAt: serverTimestamp(),
+          },
+          { merge: true }
+        );
+      });
       router.push("/dashboard");
     } catch (err) {
       setError(err.message.replace("Firebase: ", ""));

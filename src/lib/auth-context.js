@@ -8,12 +8,13 @@ import { onAuthStateChanged } from "firebase/auth";
 import { doc, onSnapshot } from "firebase/firestore";
 import { auth, db, ADMIN_EMAIL } from "./firebase";
 
-const AuthContext = createContext({ user: null, loading: true, isAdmin: false, isBanned: false });
+const AuthContext = createContext({ user: null, loading: true, isAdmin: false, isBanned: false, userData: null });
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isBanned, setIsBanned] = useState(false);
+  const [userData, setUserData] = useState(null);
 
   useEffect(() => {
     let unsubscribeDoc = null;
@@ -23,12 +24,14 @@ export function AuthProvider({ children }) {
       if (currentUser) {
         unsubscribeDoc = onSnapshot(doc(db, "users", currentUser.uid), (snap) => {
           if (snap.exists()) {
+            setUserData(snap.data());
             setIsBanned(snap.data().banned === true);
           }
           setLoading(false);
         });
       } else {
         setIsBanned(false);
+        setUserData(null);
         setLoading(false);
       }
     });
@@ -42,7 +45,7 @@ export function AuthProvider({ children }) {
   const isAdmin = !!user && !!ADMIN_EMAIL && user.email === ADMIN_EMAIL;
 
   return (
-    <AuthContext.Provider value={{ user, loading, isAdmin, isBanned }}>
+    <AuthContext.Provider value={{ user, loading, isAdmin, isBanned, userData }}>
       {children}
     </AuthContext.Provider>
   );
