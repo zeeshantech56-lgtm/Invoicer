@@ -4,7 +4,6 @@
 
 import {
   collection,
-  addDoc,
   doc,
   getDoc,
   query,
@@ -13,6 +12,7 @@ import {
   onSnapshot,
   serverTimestamp,
   Timestamp,
+  runTransaction
 } from "firebase/firestore";
 import { db } from "./firebase";
 
@@ -29,20 +29,70 @@ export function thirtyDaysAgoTimestamp() {
 
 // Creates an invoice document tied to the logged-in shop's UID.
 // Returns the new invoice's Firestore ID, used to build the public link.
-export async function createInvoice({ shopId, shopName, customerName, customerPhone, products }) {
-  const total = products.reduce((sum, p) => sum + Number(p.qty) * Number(p.price), 0);
+export async function createInvoice({ 
+  shopId, shopName, shopGstin, shopStateCode, shopAddress,
+  customerName, customerPhone, customerStateCode, customerGstin,
+  products, isInterState, subtotal, totalCgst, totalSgst, totalIgst, totalGst, grandTotal 
+}) {
+  return await runTransaction(db, async (transaction) => {
+    // 1. Read Phase: Get stock for all matched products
+    const productRefs = products
+      .filter(p => p.productId)
+      .map(p => ({ p, ref: doc(db, "users", shopId, "products", p.productId) }));
+    
+    const productDocs = await Promise.all(
+      productRefs.map(({ref}) => transaction.get(ref))
+    );
 
-  const docRef = await addDoc(collection(db, "invoices"), {
-    shopId,          // <-- ties this invoice to the shop owner's UID (multi-tenant key)
-    shopName,
-    customerName,
-    customerPhone,
-    products,         // [{ name, qty, price }]
-    total,
-    timestamp: serverTimestamp(),
+    // 2. Check Phase: Verify sufficient stock
+    productDocs.forEach((pDoc, index) => {
+      const requestedQty = productRefs[index].p.qty;
+      if (pDoc.exists()) {
+        const currentStock = pDoc.data().stockQty || 0;
+        if (currentStock < requestedQty) {
+          throw new Error(`Only ${currentStock} units of ${pDoc.data().name} available in stock.`);
+        }
+      }
+    });
+
+    // 3. Write Phase: Update stock
+    productDocs.forEach((pDoc, index) => {
+      const requestedQty = productRefs[index].p.qty;
+      if (pDoc.exists()) {
+        const currentStock = pDoc.data().stockQty || 0;
+        transaction.update(pDoc.ref, { stockQty: currentStock - requestedQty });
+      }
+    });
+
+    // 4. Write Phase: Create Invoice
+    const invoiceRef = doc(collection(db, "invoices"));
+    transaction.set(invoiceRef, {
+      shopId,          // multi-tenant key
+      shopName,
+      shopGstin: shopGstin || "",
+      shopStateCode: shopStateCode || "",
+      shopAddress: shopAddress || "",
+      customerName,
+      customerPhone,
+      customerStateCode: customerStateCode || "",
+      customerGstin: customerGstin || "",
+      products,         
+      isInterState: !!isInterState,
+      subtotal: Number(subtotal) || 0,
+      totalCgst: Number(totalCgst) || 0,
+      totalSgst: Number(totalSgst) || 0,
+      totalIgst: Number(totalIgst) || 0,
+      totalGst: Number(totalGst) || 0,
+      total: Number(grandTotal) || 0, // Keep total field for backward compatibility
+      grandTotal: Number(grandTotal) || 0,
+      paymentStatus: "unpaid",
+      amountPaid: 0,
+      timestamp: serverTimestamp(),
+      createdAt: serverTimestamp(),
+    });
+
+    return { id: invoiceRef.id, total: Number(grandTotal) || 0 };
   });
-
-  return { id: docRef.id, total };
 }
 
 // Fetches a single invoice by ID — used by the public /invoice/[id] page.

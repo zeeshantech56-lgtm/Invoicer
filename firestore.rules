@@ -82,8 +82,25 @@ service cloud.firestore {
       allow list: if request.auth != null &&
                      (isAdmin() || resource.data.shopId == request.auth.uid);
 
-      allow update, delete: if request.auth != null &&
+      allow delete: if request.auth != null &&
                                 (isAdmin() || (resource.data.shopId == request.auth.uid && canWriteInvoice()));
+
+      allow update: if request.auth != null &&
+                        (isAdmin() || (
+                          resource.data.shopId == request.auth.uid && 
+                          canWriteInvoice() &&
+                          request.resource.data.diff(resource.data).affectedKeys().hasOnly(['paymentStatus', 'amountPaid', 'updatedAt'])
+                        ));
     }
+
+    // purchaseInvoices/{purchaseInvoiceId}
+    match /purchaseInvoices/{purchaseInvoiceId} {
+      allow read, list: if request.auth != null &&
+                            (isAdmin() || resource.data.shopId == request.auth.uid);
+      allow create: if request.auth != null &&
+                       request.resource.data.shopId == request.auth.uid &&
+                       canWriteInvoice();
+      // Immutable after creation (except by admin if ever needed, but spec says no)
+      allow update, delete: if false;
   }
 }

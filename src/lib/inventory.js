@@ -13,6 +13,12 @@ export async function addProduct(userId, productData) {
   const docRef = await addDoc(productsRef, {
     name: productData.name,
     price: Number(productData.price) || 0,
+    hsnCode: productData.hsnCode || "",
+    gstRate: Number(productData.gstRate) || 0,
+    purchasePrice: Number(productData.purchasePrice) || 0,
+    stockQty: Number(productData.stockQty) || 0,
+    lowStockThreshold: Number(productData.lowStockThreshold) || 10,
+    unit: productData.unit || "pcs",
     createdAt: new Date()
   });
   return { id: docRef.id, ...productData };
@@ -23,6 +29,12 @@ export async function updateProduct(userId, productId, productData) {
   await updateDoc(productRef, {
     name: productData.name,
     price: Number(productData.price) || 0,
+    hsnCode: productData.hsnCode || "",
+    gstRate: Number(productData.gstRate) || 0,
+    purchasePrice: Number(productData.purchasePrice) || 0,
+    stockQty: Number(productData.stockQty) || 0,
+    lowStockThreshold: Number(productData.lowStockThreshold) || 10,
+    unit: productData.unit || "pcs",
     updatedAt: new Date()
   });
 }

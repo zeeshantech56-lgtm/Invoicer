@@ -21,6 +21,7 @@ function DashboardContent() {
   const [userData, setUserData] = useState(null);
   const [announcement, setAnnouncement] = useState("");
   const [loading, setLoading] = useState(true);
+  const [lowStockItems, setLowStockItems] = useState([]);
 
   useEffect(() => {
     const fetchShopProfile = async () => {
@@ -33,6 +34,16 @@ function DashboardContent() {
       setLoading(false);
     };
     fetchShopProfile();
+
+    const fetchLowStock = async () => {
+      if (!user) return;
+      const { collection, query, getDocs } = await import("firebase/firestore");
+      const q = query(collection(db, "users", user.uid, "products"));
+      const snap = await getDocs(q);
+      const low = snap.docs.map(d => ({id: d.id, ...d.data()})).filter(p => (p.stockQty || 0) <= (p.lowStockThreshold || 10));
+      setLowStockItems(low);
+    };
+    fetchLowStock();
 
     const fetchAnnouncement = async () => {
       const snap = await getDoc(doc(db, "platformConfig", "announcement"));
@@ -68,6 +79,11 @@ function DashboardContent() {
           Warning: Payment due on {expiryDateString}. Please renew to avoid interruption.
         </div>
       )}
+      {lowStockItems.length > 0 && (
+        <div className="bg-rose-600 text-white text-xs font-medium text-center py-2 px-4 shadow-sm">
+          Low Stock Alert: {lowStockItems.map(item => `${item.name} (${item.stockQty || 0} left)`).join(", ")}
+        </div>
+      )}
       <header className="border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-y-3 gap-x-2">
         <div className="flex items-center gap-2 sm:gap-6">
           <Link href="/">
@@ -90,6 +106,18 @@ function DashboardContent() {
             className="text-xs sm:text-sm text-gray-600 border border-gray-300 rounded px-2 sm:px-3 py-1.5 hover:bg-gray-50 whitespace-nowrap"
           >
             Inventory
+          </Link>
+          <Link
+            href="/dashboard/purchases"
+            className="text-xs sm:text-sm text-gray-600 border border-gray-300 rounded px-2 sm:px-3 py-1.5 hover:bg-gray-50 whitespace-nowrap"
+          >
+            Purchases
+          </Link>
+          <Link
+            href="/dashboard/settings"
+            className="text-xs sm:text-sm text-gray-600 border border-gray-300 rounded px-2 sm:px-3 py-1.5 hover:bg-gray-50 whitespace-nowrap"
+          >
+            Settings
           </Link>
           {isAdmin && (
             <Link
