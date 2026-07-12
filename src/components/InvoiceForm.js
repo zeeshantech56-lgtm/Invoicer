@@ -267,17 +267,16 @@ export default function InvoiceForm({ shopName }) {
         </div>
 
         {hasGstin && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-medium text-gray-600 mb-1">Customer State (Required for GST)</label>
+              <label className="block text-xs font-medium text-gray-600 mb-1">Customer State (Optional)</label>
               <select
                 value={customerStateCode}
                 onChange={(e) => setCustomerStateCode(e.target.value)}
-                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white"
-                required
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white"
               >
-                <option value="">Select state...</option>
-                {INDIAN_STATES.map((s) => (
+                <option value="">Same as shop (Local)</option>
+                {INDIAN_STATES.map(s => (
                   <option key={s.code} value={s.code}>{s.name} ({s.code})</option>
                 ))}
               </select>

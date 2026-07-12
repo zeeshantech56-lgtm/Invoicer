@@ -163,7 +163,7 @@ export default function PurchaseInvoiceForm({ shopProfile, onPurchaseSaved }) {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">Supplier GSTIN</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">Supplier GSTIN (Optional)</label>
             <input
               type="text"
               value={supplierGstin}
