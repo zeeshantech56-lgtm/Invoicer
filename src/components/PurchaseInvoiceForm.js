@@ -100,7 +100,8 @@ export default function PurchaseInvoiceForm({ shopProfile, onPurchaseSaved }) {
         lineSubtotal: p.lineSubtotal,
         cgst: p.cgst,
         sgst: p.sgst,
-        igst: p.igst
+        igst: p.igst,
+        totalGst: p.totalGst
       }));
 
       if (cleanProducts.some(p => p.qty <= 0 || p.purchasePrice < 0)) {

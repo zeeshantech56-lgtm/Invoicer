@@ -169,7 +169,8 @@ export default function InvoiceForm({ shopName }) {
         lineSubtotal: p.lineSubtotal,
         cgst: p.cgst,
         sgst: p.sgst,
-        igst: p.igst
+        igst: p.igst,
+        totalGst: p.totalGst
       }));
 
       if (cleanProducts.some(p => p.qty <= 0 || p.price < 0)) {
