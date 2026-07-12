@@ -85,8 +85,8 @@ export async function createInvoice({
       totalGst: Number(totalGst) || 0,
       total: Number(grandTotal) || 0, // Keep total field for backward compatibility
       grandTotal: Number(grandTotal) || 0,
-      paymentStatus: "unpaid",
-      amountPaid: 0,
+      paymentStatus: "paid",
+      amountPaid: Number(grandTotal) || 0,
       timestamp: serverTimestamp(),
       createdAt: serverTimestamp(),
     });
