@@ -73,10 +73,18 @@ export async function createPurchaseInvoice(purchaseData) {
 export async function getPurchaseInvoices(shopId) {
   const q = query(
     collection(db, "purchaseInvoices"),
-    where("shopId", "==", shopId),
-    orderBy("createdAt", "desc")
+    where("shopId", "==", shopId)
   );
   
   const snap = await getDocs(q);
-  return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const results = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  
+  // Sort in memory by createdAt descending to avoid requiring a Firestore composite index
+  results.sort((a, b) => {
+    const timeA = a.createdAt?.toMillis() || 0;
+    const timeB = b.createdAt?.toMillis() || 0;
+    return timeB - timeA;
+  });
+  
+  return results;
 }
