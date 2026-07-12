@@ -102,5 +102,6 @@ service cloud.firestore {
                        canWriteInvoice();
       // Immutable after creation (except by admin if ever needed, but spec says no)
       allow update, delete: if false;
+    }
   }
 }
