@@ -315,85 +315,99 @@ export default function InvoiceForm({ shopName }) {
 
         <div className="pt-2">
           <label className="block text-xs font-medium text-gray-600 mb-2">Products</label>
-          <div className="hidden sm:flex gap-2 text-[11px] text-gray-400 mb-1">
-            <span className="flex-1">Name</span>
-            <span className="w-16">Qty</span>
-            <span className="w-20">Rate</span>
-            {hasGstin && <span className="w-16">GST %</span>}
-            <span className="w-24 text-right">Total</span>
-            <span className="w-8"></span>
+          <div className="hidden lg:grid grid-cols-12 gap-2 text-[11px] text-gray-400 mb-1 px-1">
+            <span className="col-span-4">Name</span>
+            <span className="col-span-2">Qty</span>
+            <span className="col-span-2">Rate</span>
+            {hasGstin ? (
+              <>
+                <span className="col-span-2">GST %</span>
+                <span className="col-span-2 text-right pr-6">Total</span>
+              </>
+            ) : (
+              <span className="col-span-4 text-right pr-6">Total</span>
+            )}
           </div>
-          <div className="space-y-3 sm:space-y-2">
+          <div className="space-y-3">
             {products.map((p, i) => (
-              <div key={i} className="flex flex-col sm:flex-row gap-2 sm:items-center bg-gray-50 sm:bg-transparent p-3 sm:p-0 rounded-lg sm:rounded-none border border-gray-100 sm:border-0">
-                <div className="flex gap-2 w-full sm:flex-1">
+              <div key={i} className="grid grid-cols-12 gap-2 items-center bg-gray-50 lg:bg-transparent p-3 lg:p-0 rounded-lg lg:rounded-none border border-gray-100 lg:border-0 relative">
+                
+                {/* Delete button on mobile (top right) */}
+                <button
+                  type="button"
+                  onClick={() => removeProduct(i)}
+                  disabled={products.length === 1}
+                  className="absolute top-2 right-2 w-6 h-6 flex lg:hidden items-center justify-center text-gray-400 hover:text-red-600 disabled:opacity-30 bg-white rounded border border-gray-200"
+                >
+                  ×
+                </button>
+
+                <div className={`col-span-12 ${hasGstin ? 'lg:col-span-4' : 'lg:col-span-5'}`}>
+                  <span className="text-[10px] text-gray-500 lg:hidden block mb-1">Item Name</span>
                   <input
                     type="text"
                     placeholder="Item name"
                     value={p.name}
                     list="frequent-items"
                     onChange={(e) => updateProduct(i, "name", e.target.value)}
-                    className="flex-1 min-w-0 border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white"
+                    className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white"
                     required
                   />
-                  <button
-                    type="button"
-                    onClick={() => removeProduct(i)}
-                    disabled={products.length === 1}
-                    className="w-8 h-8 flex sm:hidden items-center justify-center text-gray-400 hover:text-red-600 disabled:opacity-30 bg-white rounded border border-gray-200"
-                  >
-                    ×
-                  </button>
                 </div>
-                <div className="flex gap-2 items-center w-full sm:w-auto">
-                  <div className="flex-1 sm:flex-none sm:w-16 flex items-center gap-2 sm:gap-0">
-                    <span className="text-[10px] text-gray-500 sm:hidden w-8">Qty</span>
-                    <input
-                      type="number"
-                      min="1"
-                      value={p.qty}
-                      onChange={(e) => updateProduct(i, "qty", e.target.value)}
-                      className="w-full sm:w-16 border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white"
-                      required
-                    />
+                
+                <div className="col-span-4 lg:col-span-2">
+                  <span className="text-[10px] text-gray-500 lg:hidden block mb-1">Qty</span>
+                  <input
+                    type="number"
+                    min="1"
+                    value={p.qty}
+                    onChange={(e) => updateProduct(i, "qty", e.target.value)}
+                    className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white"
+                    required
+                  />
+                </div>
+                
+                <div className={`col-span-4 ${hasGstin ? 'lg:col-span-2' : 'lg:col-span-2'}`}>
+                  <span className="text-[10px] text-gray-500 lg:hidden block mb-1">Rate</span>
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    placeholder="0"
+                    value={p.price}
+                    onChange={(e) => updateProduct(i, "price", e.target.value)}
+                    className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white"
+                    required
+                  />
+                </div>
+                
+                {hasGstin && (
+                  <div className="col-span-4 lg:col-span-2">
+                    <span className="text-[10px] text-gray-500 lg:hidden block mb-1">GST %</span>
+                    <select
+                      value={p.gstRate}
+                      onChange={(e) => updateProduct(i, "gstRate", e.target.value)}
+                      className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white"
+                    >
+                      <option value="0">0%</option>
+                      <option value="5">5%</option>
+                      <option value="12">12%</option>
+                      <option value="18">18%</option>
+                      <option value="28">28%</option>
+                    </select>
                   </div>
-                  <div className="flex-1 sm:flex-none sm:w-20 flex items-center gap-2 sm:gap-0">
-                    <span className="text-[10px] text-gray-500 sm:hidden w-8">Rate</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      placeholder="0"
-                      value={p.price}
-                      onChange={(e) => updateProduct(i, "price", e.target.value)}
-                      className="w-full sm:w-20 border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white"
-                      required
-                    />
-                  </div>
-                  {hasGstin && (
-                    <div className="flex-1 sm:flex-none sm:w-16 flex items-center gap-2 sm:gap-0">
-                      <span className="text-[10px] text-gray-500 sm:hidden w-8">GST</span>
-                      <select
-                        value={p.gstRate}
-                        onChange={(e) => updateProduct(i, "gstRate", e.target.value)}
-                        className="w-full sm:w-16 border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white"
-                      >
-                        <option value="0">0%</option>
-                        <option value="5">5%</option>
-                        <option value="12">12%</option>
-                        <option value="18">18%</option>
-                        <option value="28">28%</option>
-                      </select>
-                    </div>
-                  )}
-                  <div className="w-24 sm:w-24 sm:flex-none text-right text-sm font-medium text-gray-900 flex items-center justify-end">
+                )}
+                
+                <div className={`col-span-12 mt-2 lg:mt-0 ${hasGstin ? 'lg:col-span-2' : 'lg:col-span-3'} flex items-center justify-between lg:justify-end gap-2`}>
+                  <span className="text-[10px] text-gray-500 lg:hidden font-medium uppercase tracking-wide">Total Amount</span>
+                  <div className="text-right text-sm font-semibold text-gray-900">
                     ₹{((Number(p.qty) || 0) * (Number(p.price) || 0)).toFixed(2)}
                   </div>
                   <button
                     type="button"
                     onClick={() => removeProduct(i)}
                     disabled={products.length === 1}
-                    className="w-8 h-8 sm:flex-none hidden sm:flex items-center justify-center text-gray-400 hover:text-red-600 disabled:opacity-30"
+                    className="w-6 h-6 hidden lg:flex items-center justify-center text-gray-400 hover:text-red-600 disabled:opacity-30 ml-2"
                   >
                     ×
                   </button>
