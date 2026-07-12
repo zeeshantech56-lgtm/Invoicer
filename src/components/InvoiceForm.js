@@ -315,102 +315,84 @@ export default function InvoiceForm({ shopName }) {
 
         <div className="pt-2">
           <label className="block text-xs font-medium text-gray-600 mb-2">Products</label>
-          <div className="hidden lg:grid grid-cols-12 gap-2 text-[11px] text-gray-400 mb-1 px-1">
-            <span className="col-span-4">Name</span>
-            <span className="col-span-2">Qty</span>
-            <span className="col-span-2">Rate</span>
-            {hasGstin ? (
-              <>
-                <span className="col-span-2">GST %</span>
-                <span className="col-span-2 text-right pr-6">Total</span>
-              </>
-            ) : (
-              <span className="col-span-4 text-right pr-6">Total</span>
-            )}
-          </div>
           <div className="space-y-3">
             {products.map((p, i) => (
-              <div key={i} className="grid grid-cols-12 gap-2 items-center bg-gray-50 lg:bg-transparent p-3 lg:p-0 rounded-lg lg:rounded-none border border-gray-100 lg:border-0 relative">
+              <div key={i} className="bg-gray-50 p-3 rounded-lg border border-gray-200 relative">
                 
-                {/* Delete button on mobile (top right) */}
+                {/* Delete button (top right) */}
                 <button
                   type="button"
                   onClick={() => removeProduct(i)}
                   disabled={products.length === 1}
-                  className="absolute top-2 right-2 w-6 h-6 flex lg:hidden items-center justify-center text-gray-400 hover:text-red-600 disabled:opacity-30 bg-white rounded border border-gray-200"
+                  className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center text-gray-400 hover:text-red-600 disabled:opacity-30 bg-white rounded border border-gray-200 shadow-sm"
+                  title="Remove item"
                 >
                   ×
                 </button>
 
-                <div className={`col-span-12 ${hasGstin ? 'lg:col-span-4' : 'lg:col-span-5'}`}>
-                  <span className="text-[10px] text-gray-500 lg:hidden block mb-1">Item Name</span>
+                <div className="mb-3 pr-8">
+                  <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Item Name</label>
                   <input
                     type="text"
-                    placeholder="Item name"
+                    placeholder="e.g. Blue Denim Jeans"
                     value={p.name}
                     list="frequent-items"
                     onChange={(e) => updateProduct(i, "name", e.target.value)}
-                    className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white"
+                    className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white shadow-sm"
                     required
                   />
                 </div>
                 
-                <div className="col-span-4 lg:col-span-2">
-                  <span className="text-[10px] text-gray-500 lg:hidden block mb-1">Qty</span>
-                  <input
-                    type="number"
-                    min="1"
-                    value={p.qty}
-                    onChange={(e) => updateProduct(i, "qty", e.target.value)}
-                    className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white"
-                    required
-                  />
-                </div>
-                
-                <div className={`col-span-4 ${hasGstin ? 'lg:col-span-2' : 'lg:col-span-2'}`}>
-                  <span className="text-[10px] text-gray-500 lg:hidden block mb-1">Rate</span>
-                  <input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    placeholder="0"
-                    value={p.price}
-                    onChange={(e) => updateProduct(i, "price", e.target.value)}
-                    className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white"
-                    required
-                  />
-                </div>
-                
-                {hasGstin && (
-                  <div className="col-span-4 lg:col-span-2">
-                    <span className="text-[10px] text-gray-500 lg:hidden block mb-1">GST %</span>
-                    <select
-                      value={p.gstRate}
-                      onChange={(e) => updateProduct(i, "gstRate", e.target.value)}
-                      className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white"
-                    >
-                      <option value="0">0%</option>
-                      <option value="5">5%</option>
-                      <option value="12">12%</option>
-                      <option value="18">18%</option>
-                      <option value="28">28%</option>
-                    </select>
+                <div className="flex flex-wrap gap-3 mb-2">
+                  <div className="flex-1 min-w-[60px]">
+                    <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Qty</label>
+                    <input
+                      type="number"
+                      min="1"
+                      value={p.qty}
+                      onChange={(e) => updateProduct(i, "qty", e.target.value)}
+                      className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white shadow-sm"
+                      required
+                    />
                   </div>
-                )}
+                  
+                  <div className="flex-1 min-w-[80px]">
+                    <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">Rate (₹)</label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={p.price}
+                      onChange={(e) => updateProduct(i, "price", e.target.value)}
+                      className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white shadow-sm"
+                      required
+                    />
+                  </div>
+                  
+                  {hasGstin && (
+                    <div className="flex-1 min-w-[70px]">
+                      <label className="block text-[10px] font-semibold text-gray-500 uppercase tracking-wide mb-1">GST %</label>
+                      <select
+                        value={p.gstRate}
+                        onChange={(e) => updateProduct(i, "gstRate", e.target.value)}
+                        className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white shadow-sm"
+                      >
+                        <option value="0">0%</option>
+                        <option value="5">5%</option>
+                        <option value="12">12%</option>
+                        <option value="18">18%</option>
+                        <option value="28">28%</option>
+                      </select>
+                    </div>
+                  )}
+                </div>
                 
-                <div className={`col-span-12 mt-2 lg:mt-0 ${hasGstin ? 'lg:col-span-2' : 'lg:col-span-3'} flex items-center justify-between lg:justify-end gap-2`}>
-                  <span className="text-[10px] text-gray-500 lg:hidden font-medium uppercase tracking-wide">Total Amount</span>
-                  <div className="text-right text-sm font-semibold text-gray-900">
+                <div className="flex items-center justify-between border-t border-gray-200 mt-3 pt-2">
+                  <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">Line Total</span>
+                  <div className="text-sm font-bold text-gray-900">
                     ₹{((Number(p.qty) || 0) * (Number(p.price) || 0)).toFixed(2)}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => removeProduct(i)}
-                    disabled={products.length === 1}
-                    className="w-6 h-6 hidden lg:flex items-center justify-center text-gray-400 hover:text-red-600 disabled:opacity-30 ml-2"
-                  >
-                    ×
-                  </button>
                 </div>
               </div>
             ))}
