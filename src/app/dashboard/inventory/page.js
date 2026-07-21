@@ -24,6 +24,13 @@ function InventoryContent() {
   
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Edit State
+  const [editingProductId, setEditingProductId] = useState(null);
+  const [editForm, setEditForm] = useState({
+    name: "", price: "", hsnCode: "", gstRate: "18", purchasePrice: "", stockQty: "", lowStockThreshold: "10", unit: "pcs"
+  });
+  const [isUpdating, setIsUpdating] = useState(false);
+
   useEffect(() => {
     async function loadProducts() {
       if (!user) return;
@@ -80,6 +87,40 @@ function InventoryContent() {
       setProducts(products.filter(p => p.id !== productId));
     } catch (err) {
       alert("Error deleting product: " + err.message);
+    }
+  };
+
+  const handleEditClick = (p) => {
+    setEditingProductId(p.id);
+    setEditForm({
+      name: p.name || "",
+      price: p.price || "",
+      hsnCode: p.hsnCode || "",
+      gstRate: p.gstRate || "18",
+      purchasePrice: p.purchasePrice || "",
+      stockQty: p.stockQty || "",
+      lowStockThreshold: p.lowStockThreshold || "10",
+      unit: p.unit || "pcs"
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingProductId(null);
+  };
+
+  const handleUpdateProductSubmit = async (e) => {
+    e.preventDefault();
+    if (!editForm.name.trim() || !user || !editingProductId) return;
+
+    setIsUpdating(true);
+    try {
+      await updateProduct(user.uid, editingProductId, editForm);
+      setProducts(products.map(p => p.id === editingProductId ? { id: editingProductId, ...editForm } : p));
+      setEditingProductId(null);
+    } catch (err) {
+      alert("Error updating product: " + err.message);
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -248,6 +289,32 @@ function InventoryContent() {
                       const lowThreshold = Number(p.lowStockThreshold) || 10;
                       const isLowStock = stockQty <= lowThreshold;
 
+                      if (editingProductId === p.id) {
+                        return (
+                          <tr key={p.id} className="border-b border-gray-100 bg-gray-50">
+                            <td colSpan="6" className="py-3 px-3">
+                              <form onSubmit={handleUpdateProductSubmit} className="flex gap-3 items-center flex-wrap sm:flex-nowrap">
+                                <input type="text" required value={editForm.name} onChange={(e) => setEditForm({...editForm, name: e.target.value})} placeholder="Name" className="border px-2 py-1.5 text-xs rounded w-full sm:w-32 focus:ring-1 focus:ring-gray-900" />
+                                <input type="text" value={editForm.hsnCode} onChange={(e) => setEditForm({...editForm, hsnCode: e.target.value})} placeholder="HSN" className="border px-2 py-1.5 text-xs rounded w-full sm:w-20 focus:ring-1 focus:ring-gray-900" />
+                                <select value={editForm.gstRate} onChange={(e) => setEditForm({...editForm, gstRate: e.target.value})} className="border px-2 py-1.5 text-xs rounded w-full sm:w-20 bg-white focus:ring-1 focus:ring-gray-900">
+                                  <option value="0">0%</option>
+                                  <option value="5">5%</option>
+                                  <option value="12">12%</option>
+                                  <option value="18">18%</option>
+                                  <option value="28">28%</option>
+                                </select>
+                                <input type="number" min="0" step="0.01" required value={editForm.price} onChange={(e) => setEditForm({...editForm, price: e.target.value})} placeholder="Price" className="border px-2 py-1.5 text-xs rounded w-full sm:w-24 focus:ring-1 focus:ring-gray-900" />
+                                <input type="number" min="0" value={editForm.stockQty} onChange={(e) => setEditForm({...editForm, stockQty: e.target.value})} placeholder="Stock" className="border px-2 py-1.5 text-xs rounded w-full sm:w-20 focus:ring-1 focus:ring-gray-900" />
+                                <div className="flex gap-2 ml-auto w-full sm:w-auto justify-end mt-2 sm:mt-0">
+                                  <button type="submit" disabled={isUpdating} className="text-white text-xs font-medium bg-gray-900 px-3 py-1.5 rounded hover:bg-gray-800 disabled:opacity-50">{isUpdating ? "Saving..." : "Save"}</button>
+                                  <button type="button" onClick={handleCancelEdit} className="text-gray-600 hover:text-gray-900 text-xs font-medium px-3 py-1.5 bg-gray-200 rounded hover:bg-gray-300">Cancel</button>
+                                </div>
+                              </form>
+                            </td>
+                          </tr>
+                        );
+                      }
+
                       return (
                         <tr key={p.id} className={`border-b border-gray-100 hover:bg-gray-50 ${isLowStock ? 'bg-red-50' : ''}`}>
                           <td className="py-3 px-3 text-gray-900">
@@ -261,12 +328,20 @@ function InventoryContent() {
                             {stockQty} <span className="text-gray-500 text-xs font-normal">{p.unit}</span>
                           </td>
                           <td className="py-3 px-3 text-right">
-                            <button
-                              onClick={() => handleDeleteProduct(p.id)}
-                              className="text-red-500 hover:text-red-700 text-xs font-medium"
-                            >
-                              Delete
-                            </button>
+                            <div className="flex items-center justify-end gap-3">
+                              <button
+                                onClick={() => handleEditClick(p)}
+                                className="text-blue-500 hover:text-blue-700 text-xs font-medium"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDeleteProduct(p.id)}
+                                className="text-red-500 hover:text-red-700 text-xs font-medium"
+                              >
+                                Delete
+                              </button>
+                            </div>
                           </td>
                         </tr>
                       );
