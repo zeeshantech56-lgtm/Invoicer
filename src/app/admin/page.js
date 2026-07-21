@@ -15,6 +15,7 @@ import { useAuth } from "@/lib/auth-context";
 import { subscribeToAllInvoices } from "@/lib/invoices";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import Logo from "@/components/Logo";
+import ExportModal from "@/components/ExportModal";
 import Link from "next/link";
 import { TRIAL_DURATION_MS } from "@/lib/constants";
 
@@ -28,6 +29,7 @@ function AdminContent() {
   const [savingAnnounce, setSavingAnnounce] = useState(false);
   const [selectedShopId, setSelectedShopId] = useState(null);
   const [timeFilter, setTimeFilter] = useState("14d");
+  const [showExportModal, setShowExportModal] = useState(false);
 
   useEffect(() => {
     const fetchShops = async () => {
@@ -113,9 +115,70 @@ function AdminContent() {
     link.click();
   };
 
-  const exportInvoicesCSV = () => {
+  const applyDateFilter = (invoicesToFilter, filterParams) => {
+    const { rangeType, startDate, endDate } = filterParams;
+    const now = new Date();
+    
+    const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0);
+    const endOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+
+    let start = null;
+    let end = null;
+
+    switch (rangeType) {
+      case "today":
+        start = startOfDay(now);
+        end = endOfDay(now);
+        break;
+      case "yesterday":
+        const y = new Date(now);
+        y.setDate(y.getDate() - 1);
+        start = startOfDay(y);
+        end = endOfDay(y);
+        break;
+      case "7d":
+        const d7 = new Date(now);
+        d7.setDate(d7.getDate() - 6);
+        start = startOfDay(d7);
+        end = endOfDay(now);
+        break;
+      case "last_month":
+        start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        end = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+        break;
+      case "this_year":
+        start = new Date(now.getFullYear(), 0, 1);
+        end = endOfDay(now);
+        break;
+      case "lifetime":
+        start = new Date(0);
+        end = endOfDay(now);
+        break;
+      case "custom":
+        if (startDate) start = startOfDay(new Date(startDate));
+        if (endDate) end = endOfDay(new Date(endDate));
+        break;
+    }
+
+    return invoicesToFilter.filter(inv => {
+      if (!inv.timestamp?.toDate) return false;
+      const invDate = inv.timestamp.toDate();
+      if (start && invDate < start) return false;
+      if (end && invDate > end) return false;
+      return true;
+    });
+  };
+
+  const handleExportInvoicesCSV = (filterParams) => {
+    const filteredInvoices = applyDateFilter(invoices, filterParams);
+    
+    if (filteredInvoices.length === 0) {
+      alert("No invoices found for the selected date range.");
+      return;
+    }
+
     const headers = ["Invoice ID", "Shop", "Customer", "Phone", "Total", "Date"];
-    const rows = invoices.map(inv => {
+    const rows = filteredInvoices.map(inv => {
       const date = inv.timestamp?.toDate ? inv.timestamp.toDate().toLocaleString() : "";
       return [
         inv.id,
@@ -129,7 +192,7 @@ function AdminContent() {
     const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
     const link = document.createElement("a");
     link.href = encodeURI(csvContent);
-    link.download = `invoices_export_${new Date().toISOString().split("T")[0]}.csv`;
+    link.download = `admin_invoices_export_${filterParams.rangeType}_${new Date().toISOString().split("T")[0]}.csv`;
     link.click();
   };
 
@@ -316,7 +379,7 @@ function AdminContent() {
       <main className="max-w-6xl mx-auto px-6 py-8">
         <div className="flex items-center justify-end gap-3 mb-6">
           <button onClick={exportShopsCSV} className="text-xs border border-gray-300 rounded px-3 py-1.5 hover:bg-gray-50 text-gray-700 font-medium">Export All Shops (CSV)</button>
-          <button onClick={exportInvoicesCSV} className="text-xs border border-gray-300 rounded px-3 py-1.5 hover:bg-gray-50 text-gray-700 font-medium">Export All Invoices (CSV)</button>
+          <button onClick={() => setShowExportModal(true)} className="text-xs border border-gray-300 rounded px-3 py-1.5 hover:bg-gray-50 text-gray-700 font-medium">Export Invoices (CSV)</button>
         </div>
 
         {/* Global Announcement */}
@@ -527,6 +590,13 @@ function AdminContent() {
           )}
         </div>
       </main>
+
+      <ExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        onExport={handleExportInvoicesCSV}
+        title="Export All Invoices (CSV)"
+      />
     </div>
   );
 }

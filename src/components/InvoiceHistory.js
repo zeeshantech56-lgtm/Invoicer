@@ -17,6 +17,7 @@ import {
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
 } from "recharts";
+import ExportModal from "./ExportModal";
 
 export default function InvoiceHistory() {
   const { user } = useAuth();
@@ -28,6 +29,7 @@ export default function InvoiceHistory() {
   const [paymentStatus, setPaymentStatus] = useState("unpaid");
   const [amountPaid, setAmountPaid] = useState("");
   const [updatingPayment, setUpdatingPayment] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -64,9 +66,70 @@ export default function InvoiceHistory() {
   const todayCount = todaysInvoices.length;
   const todayTotal = todaysInvoices.reduce((sum, inv) => sum + Number(inv.total || 0), 0);
 
-  const exportCSV = () => {
+  const applyDateFilter = (invoicesToFilter, filterParams) => {
+    const { rangeType, startDate, endDate } = filterParams;
+    const now = new Date();
+    
+    const startOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0);
+    const endOfDay = (d) => new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59, 999);
+
+    let start = null;
+    let end = null;
+
+    switch (rangeType) {
+      case "today":
+        start = startOfDay(now);
+        end = endOfDay(now);
+        break;
+      case "yesterday":
+        const y = new Date(now);
+        y.setDate(y.getDate() - 1);
+        start = startOfDay(y);
+        end = endOfDay(y);
+        break;
+      case "7d":
+        const d7 = new Date(now);
+        d7.setDate(d7.getDate() - 6);
+        start = startOfDay(d7);
+        end = endOfDay(now);
+        break;
+      case "last_month":
+        start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        end = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+        break;
+      case "this_year":
+        start = new Date(now.getFullYear(), 0, 1);
+        end = endOfDay(now);
+        break;
+      case "lifetime":
+        start = new Date(0);
+        end = endOfDay(now);
+        break;
+      case "custom":
+        if (startDate) start = startOfDay(new Date(startDate));
+        if (endDate) end = endOfDay(new Date(endDate));
+        break;
+    }
+
+    return invoicesToFilter.filter(inv => {
+      if (!inv.timestamp?.toDate) return false;
+      const invDate = inv.timestamp.toDate();
+      if (start && invDate < start) return false;
+      if (end && invDate > end) return false;
+      return true;
+    });
+  };
+
+  const handleExportCSV = (filterParams) => {
+    const filteredInvoices = applyDateFilter(invoices, filterParams);
+    
+    if (filteredInvoices.length === 0) {
+      alert("No invoices found for the selected date range.");
+      return;
+    }
+
     const headers = ["Date", "Customer", "Phone", "Items", "Total"];
-    const rows = invoices.map((inv) => {
+    const rows = filteredInvoices.map((inv) => {
       const date = inv.timestamp?.toDate ? inv.timestamp.toDate().toLocaleString() : "Just now";
       const customer = inv.customerName || "";
       const phone = inv.customerPhone || "";
@@ -86,7 +149,7 @@ export default function InvoiceHistory() {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `invoices_export_${new Date().toISOString().split("T")[0]}.csv`);
+    link.setAttribute("download", `invoices_export_${filterParams.rangeType}_${new Date().toISOString().split("T")[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -191,7 +254,7 @@ export default function InvoiceHistory() {
         <div className="flex items-center gap-4">
           <span className="text-xs text-gray-400">Last {RETENTION_DAYS} days</span>
           <button
-            onClick={exportCSV}
+            onClick={() => setShowExportModal(true)}
             disabled={invoices.length === 0}
             className="text-xs border border-gray-300 rounded px-2 py-1 text-gray-600 hover:bg-gray-50 disabled:opacity-50"
           >
@@ -381,6 +444,13 @@ export default function InvoiceHistory() {
           </table>
         </div>
       )}
+      
+      <ExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        onExport={handleExportCSV}
+        title="Export Invoices (CSV)"
+      />
     </div>
   );
 }
