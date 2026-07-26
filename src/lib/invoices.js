@@ -33,7 +33,8 @@ export async function createInvoice({
   shopId, shopName, shopGstin, shopStateCode, shopAddress,
   customerName, customerPhone, customerStateCode, customerGstin,
   products, isInterState, subtotal, totalCgst, totalSgst, totalIgst, totalGst, grandTotal,
-  paymentStatus, amountPaid
+  paymentStatus, amountPaid,
+  paymentMode, cashAmount, onlineAmount
 }) {
   return await runTransaction(db, async (transaction) => {
     // 1. Read Phase: Get stock for all matched products
@@ -88,6 +89,10 @@ export async function createInvoice({
       grandTotal: Number(grandTotal) || 0,
       paymentStatus: paymentStatus || "paid",
       amountPaid: amountPaid !== undefined ? Number(amountPaid) : (Number(grandTotal) || 0),
+      // Payment Mode fields (new)
+      paymentMode: paymentMode || "Cash",
+      cashAmount: Number(cashAmount) || 0,
+      onlineAmount: Number(onlineAmount) || 0,
       timestamp: serverTimestamp(),
       createdAt: serverTimestamp(),
     });
