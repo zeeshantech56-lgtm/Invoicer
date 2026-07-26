@@ -190,7 +190,8 @@ export default function InvoiceForm({ shopName }) {
       localStorage.setItem("invoicer_frequent_items", JSON.stringify(updatedItems));
       localStorage.setItem("invoicer_custom_footer", customFooter);
 
-      const fullPhone = "91" + customerPhone.replace(/\D/g, "");
+      const rawPhone = customerPhone.replace(/\D/g, "");
+      const fullPhone = rawPhone ? "91" + rawPhone : "";
 
       const { id, total: savedTotal } = await createInvoice({
         shopId: user.uid,
@@ -214,21 +215,26 @@ export default function InvoiceForm({ shopName }) {
         amountPaid: paymentStatus === 'paid' ? grandTotal : (paymentStatus === 'unpaid' ? 0 : amountPaid)
       });
 
-      const siteUrl = typeof window !== "undefined" ? window.location.origin : "";
-      const waUrl = buildWhatsAppUrl({
-        phone: fullPhone,
-        shopName: shopProfile?.shopName || shopName || "My Shop",
-        customerName,
-        products: cleanProducts,
-        total: savedTotal,
-        invoiceId: id,
-        siteUrl,
-        customFooter,
-        paymentStatus,
-        amountPaid: paymentStatus === 'paid' ? grandTotal : (paymentStatus === 'unpaid' ? 0 : amountPaid)
-      });
+      // Only open WhatsApp if a phone number was provided
+      if (fullPhone && rawPhone.length >= 10) {
+        const siteUrl = typeof window !== "undefined" ? window.location.origin : "";
+        const waUrl = buildWhatsAppUrl({
+          phone: fullPhone,
+          shopName: shopProfile?.shopName || shopName || "My Shop",
+          customerName,
+          products: cleanProducts,
+          total: savedTotal,
+          invoiceId: id,
+          siteUrl,
+          customFooter,
+          paymentStatus,
+          amountPaid: paymentStatus === 'paid' ? grandTotal : (paymentStatus === 'unpaid' ? 0 : amountPaid)
+        });
+        window.open(waUrl, "_blank");
+      } else {
+        alert("Invoice saved successfully!");
+      }
 
-      window.open(waUrl, "_blank");
       resetForm();
     } catch (err) {
       alert("Error saving invoice: " + err.message);
@@ -256,7 +262,9 @@ export default function InvoiceForm({ shopName }) {
             />
           </div>
           <div>
-            <label className="block text-xs font-medium text-gray-600 mb-1">WhatsApp Number</label>
+            <label className="block text-xs font-medium text-gray-600 mb-1">
+              WhatsApp Number <span className="text-gray-400 font-normal">(Optional)</span>
+            </label>
             <div className="flex rounded border border-gray-300 focus-within:ring-2 focus-within:ring-gray-900">
               <span className="inline-flex items-center px-2 sm:px-3 rounded-l border-r border-gray-300 bg-gray-50 text-gray-500 text-sm">
                 +91
@@ -267,7 +275,6 @@ export default function InvoiceForm({ shopName }) {
                 value={customerPhone}
                 onChange={(e) => setCustomerPhone(e.target.value)}
                 className="flex-1 px-3 py-2 text-sm rounded-r focus:outline-none"
-                required
               />
             </div>
           </div>
@@ -487,7 +494,7 @@ export default function InvoiceForm({ shopName }) {
           disabled={submitting}
           className="w-full bg-green-600 text-white text-sm font-medium py-2.5 rounded hover:bg-green-700 transition disabled:opacity-50"
         >
-          {submitting ? "Saving..." : "Save and send via WhatsApp"}
+          {submitting ? "Saving..." : customerPhone.replace(/\D/g, "").length >= 10 ? "Save & Send via WhatsApp" : "Save Invoice"}
         </button>
       </form>
     </div>
