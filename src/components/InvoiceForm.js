@@ -25,6 +25,8 @@ export default function InvoiceForm({ shopName }) {
   const [submitting, setSubmitting] = useState(false);
   const [customFooter, setCustomFooter] = useState("");
   const [frequentItems, setFrequentItems] = useState([]);
+  const [paymentStatus, setPaymentStatus] = useState("paid");
+  const [amountPaid, setAmountPaid] = useState("");
   
   const [shopProfile, setShopProfile] = useState(null);
   const [inventoryProducts, setInventoryProducts] = useState([]);
@@ -207,7 +209,9 @@ export default function InvoiceForm({ shopName }) {
         totalSgst,
         totalIgst,
         totalGst,
-        grandTotal
+        grandTotal,
+        paymentStatus,
+        amountPaid: paymentStatus === 'paid' ? grandTotal : (paymentStatus === 'unpaid' ? 0 : amountPaid)
       });
 
       const siteUrl = typeof window !== "undefined" ? window.location.origin : "";
@@ -219,7 +223,9 @@ export default function InvoiceForm({ shopName }) {
         total: savedTotal,
         invoiceId: id,
         siteUrl,
-        customFooter
+        customFooter,
+        paymentStatus,
+        amountPaid: paymentStatus === 'paid' ? grandTotal : (paymentStatus === 'unpaid' ? 0 : amountPaid)
       });
 
       window.open(waUrl, "_blank");
@@ -432,6 +438,35 @@ export default function InvoiceForm({ shopName }) {
             <span className="text-xl font-semibold text-gray-900">
               ₹{grandTotal.toFixed(2)}
             </span>
+          </div>
+        </div>
+
+        <div className="pt-2">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Payment Status
+          </label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <select
+              value={paymentStatus}
+              onChange={(e) => setPaymentStatus(e.target.value)}
+              className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white"
+            >
+              <option value="paid">Paid</option>
+              <option value="partial">Partially Paid</option>
+              <option value="unpaid">Unpaid</option>
+            </select>
+            {paymentStatus === "partial" && (
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="Amount Paid (₹)"
+                value={amountPaid}
+                onChange={(e) => setAmountPaid(e.target.value)}
+                className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                required
+              />
+            )}
           </div>
         </div>
 

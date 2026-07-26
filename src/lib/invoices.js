@@ -32,7 +32,8 @@ export function thirtyDaysAgoTimestamp() {
 export async function createInvoice({ 
   shopId, shopName, shopGstin, shopStateCode, shopAddress,
   customerName, customerPhone, customerStateCode, customerGstin,
-  products, isInterState, subtotal, totalCgst, totalSgst, totalIgst, totalGst, grandTotal 
+  products, isInterState, subtotal, totalCgst, totalSgst, totalIgst, totalGst, grandTotal,
+  paymentStatus, amountPaid
 }) {
   return await runTransaction(db, async (transaction) => {
     // 1. Read Phase: Get stock for all matched products
@@ -85,8 +86,8 @@ export async function createInvoice({
       totalGst: Number(totalGst) || 0,
       total: Number(grandTotal) || 0, // Keep total field for backward compatibility
       grandTotal: Number(grandTotal) || 0,
-      paymentStatus: "paid",
-      amountPaid: Number(grandTotal) || 0,
+      paymentStatus: paymentStatus || "paid",
+      amountPaid: amountPaid !== undefined ? Number(amountPaid) : (Number(grandTotal) || 0),
       timestamp: serverTimestamp(),
       createdAt: serverTimestamp(),
     });
@@ -129,7 +130,7 @@ export function subscribeToAllInvoices(callback) {
 
 // Builds the WhatsApp deep link. Message includes a public link to the
 // hosted invoice page so the customer can view a clean, permanent copy.
-export function buildWhatsAppUrl({ phone, shopName, customerName, products, total, invoiceId, siteUrl, customFooter }) {
+export function buildWhatsAppUrl({ phone, shopName, customerName, products, total, invoiceId, siteUrl, customFooter, paymentStatus, amountPaid }) {
   let cleanedPhone = phone.replace(/[^0-9]/g, "");
   if (!cleanedPhone.startsWith("91") && cleanedPhone.length === 10) {
     cleanedPhone = "91" + cleanedPhone;
@@ -144,7 +145,8 @@ export function buildWhatsAppUrl({ phone, shopName, customerName, products, tota
     `Here is a quick summary of your purchase today:\n\n` +
     `*Items:*\n` +
     `${lines.map((line) => `- ${line}`).join("\n")}\n\n` +
-    `*Total Amount: Rs ${total.toFixed(2)}*\n\n` +
+    `*Total Amount: Rs ${total.toFixed(2)}*\n` +
+    (paymentStatus ? `*Payment Status:* ${paymentStatus === 'paid' ? 'Paid' : paymentStatus === 'partial' ? `Partially Paid (Rs ${amountPaid})` : 'Unpaid'}\n\n` : '\n') +
     `----------------------------------------\n` +
     `*View your full digital receipt here:*\n` +
     `${invoiceLink}\n\n` +

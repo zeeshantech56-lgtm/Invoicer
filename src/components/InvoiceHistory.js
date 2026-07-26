@@ -166,7 +166,9 @@ export default function InvoiceHistory() {
       total: inv.total || 0,
       invoiceId: inv.id,
       siteUrl,
-      customFooter
+      customFooter,
+      paymentStatus: inv.paymentStatus,
+      amountPaid: inv.amountPaid
     });
     window.open(waUrl, "_blank");
   };
