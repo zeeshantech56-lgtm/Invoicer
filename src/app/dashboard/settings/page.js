@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc, runTransaction } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth-context";
 import ProtectedRoute from "@/components/ProtectedRoute";
@@ -15,6 +15,7 @@ function SettingsContent() {
   const [saving, setSaving] = useState(false);
   
   const [shopName, setShopName] = useState("");
+  const [originalShopName, setOriginalShopName] = useState(""); // track original to detect changes
   const [gstin, setGstin] = useState("");
   const [businessAddress, setBusinessAddress] = useState("");
   const [stateCode, setStateCode] = useState("");
@@ -27,6 +28,7 @@ function SettingsContent() {
         if (snap.exists()) {
           const data = snap.data();
           setShopName(data.shopName || "");
+          setOriginalShopName(data.shopName || ""); // remember original
           setGstin(data.gstin || "");
           setBusinessAddress(data.businessAddress || "");
           setStateCode(data.stateCode || "");
@@ -55,13 +57,51 @@ function SettingsContent() {
         }
       }
 
-      await updateDoc(doc(db, "users", user.uid), {
-        shopName,
-        gstin,
-        businessAddress,
-        stateCode,
-        stateName
-      });
+      const newCleanName = shopName.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+      const oldCleanName = originalShopName.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+      const nameChanged = newCleanName !== oldCleanName;
+
+      if (nameChanged) {
+        if (!newCleanName) throw new Error("Please enter a valid shop name.");
+
+        // Use a transaction to atomically check uniqueness, release old name, claim new name
+        await runTransaction(db, async (transaction) => {
+          const newNameRef = doc(db, "shopNames", newCleanName);
+          const newNameSnap = await transaction.get(newNameRef);
+
+          if (newNameSnap.exists() && newNameSnap.data().uid !== user.uid) {
+            throw new Error("This shop name is already taken. Please choose another one.");
+          }
+
+          // Delete old registry entry
+          if (oldCleanName) {
+            transaction.delete(doc(db, "shopNames", oldCleanName));
+          }
+
+          // Register new name
+          transaction.set(newNameRef, { uid: user.uid });
+
+          // Update user profile
+          transaction.update(doc(db, "users", user.uid), {
+            shopName,
+            gstin,
+            businessAddress,
+            stateCode,
+            stateName,
+          });
+        });
+
+        setOriginalShopName(shopName); // update tracked original after successful save
+      } else {
+        // Name unchanged — simple update, no registry changes needed
+        await updateDoc(doc(db, "users", user.uid), {
+          shopName,
+          gstin,
+          businessAddress,
+          stateCode,
+          stateName
+        });
+      }
       alert("Settings saved successfully!");
     } catch (err) {
       alert("Error saving settings: " + err.message);
