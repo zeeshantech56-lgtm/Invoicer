@@ -213,8 +213,8 @@ export default function InvoiceHistory() {
       const d = new Date();
       d.setDate(d.getDate() - (30 - 1) + i);
       d.setHours(0, 0, 0, 0);
-      const label = (i % 5 === 0 || i === 29) ? d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : "";
-      return { date: d, key: d.getTime(), total: 0, label };
+      // Store full date label — we'll use tickFormatter + interval in XAxis
+      return { date: d, key: d.getTime(), total: 0, label: d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) };
     });
   } else if (chartFilter === "6m") {
     chartData = Array.from({ length: 6 }).map((_, i) => {
@@ -295,11 +295,15 @@ export default function InvoiceHistory() {
               <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f3f4f6" />
                 <XAxis 
-                  dataKey="label" 
+                  dataKey="label"
                   axisLine={false}
                   tickLine={false}
                   tick={{ fontSize: 10, fill: '#9ca3af' }}
                   dy={10}
+                  interval={chartFilter === '30d' ? 4 : 0}
+                  angle={chartFilter === '30d' ? -35 : 0}
+                  textAnchor={chartFilter === '30d' ? 'end' : 'middle'}
+                  height={chartFilter === '30d' ? 40 : 20}
                 />
                 <YAxis 
                   axisLine={false}
@@ -311,12 +315,13 @@ export default function InvoiceHistory() {
                   cursor={{ fill: '#f3f4f6' }}
                   contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                   formatter={(value) => [`₹${Number(value).toFixed(2)}`, 'Sales']}
+                  labelFormatter={(label) => label}
                 />
                 <Bar 
                   dataKey="total" 
                   fill="#111827" 
                   radius={[4, 4, 0, 0]} 
-                  barSize={chartFilter === '30d' ? 6 : (chartFilter === '6m' ? 32 : 24)}
+                  barSize={chartFilter === '30d' ? 8 : (chartFilter === '6m' ? 32 : 24)}
                 />
               </BarChart>
             </ResponsiveContainer>
