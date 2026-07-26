@@ -55,6 +55,15 @@ export default function InvoiceHistory() {
     return timestamp.toDate().toLocaleString();
   };
 
+  const formatDateForCSV = (timestamp) => {
+    if (!timestamp?.toDate) return "";
+    const date = timestamp.toDate();
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = date.toLocaleString('en-US', { month: 'short' });
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -132,24 +141,66 @@ export default function InvoiceHistory() {
       return;
     }
 
-    const headers = ["Date", "Customer", "Phone", "Items", "Total"];
+    // Enhanced headers with all required columns
+    const headers = [
+      "Invoice No",
+      "Date",
+      "Customer",
+      "Phone",
+      "Items",
+      "Total Amount",
+      "Cash Amount",
+      "Online Amount",
+      "Payment Mode",
+      "Status"
+    ];
+
+    // Generate CSV rows with enhanced data
     const rows = filteredInvoices.map((inv) => {
-      const date = inv.timestamp?.toDate ? inv.timestamp.toDate().toLocaleString() : "Just now";
+      const invoiceNo = `INV${inv.id.slice(0, 8).toUpperCase()}`;
+      const date = formatDateForCSV(inv.timestamp);
       const customer = inv.customerName || "";
       const phone = inv.customerPhone || "";
       const items = (inv.products || []).map((p) => `${p.qty}x ${p.name}`).join("; ");
-      const total = inv.total || 0;
+      const totalAmount = Number(inv.total || 0);
+      const cashAmount = Number(inv.cashAmount || 0);
+      const onlineAmount = Number(inv.onlineAmount || 0);
+      const paymentMode = inv.paymentMode || "Unknown";
+      const status = inv.paymentStatus || "unpaid";
 
       return [
+        `"${invoiceNo}"`,
         `"${date}"`,
         `"${customer.replace(/"/g, '""')}"`,
         `"${phone}"`,
         `"${items.replace(/"/g, '""')}"`,
-        total
+        totalAmount,
+        cashAmount,
+        onlineAmount,
+        `"${paymentMode}"`,
+        `"${status}"`
       ].join(",");
     });
 
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
+    // Calculate summary statistics
+    const totalInvoices = filteredInvoices.length;
+    const totalSales = filteredInvoices.reduce((sum, inv) => sum + Number(inv.total || 0), 0);
+    const totalCashCollection = filteredInvoices.reduce((sum, inv) => sum + Number(inv.cashAmount || 0), 0);
+    const totalOnlineCollection = filteredInvoices.reduce((sum, inv) => sum + Number(inv.onlineAmount || 0), 0);
+
+    // Build CSV content with headers, data rows, blank row, and summary
+    const csvLines = [
+      headers.join(","),
+      ...rows,
+      "", // Blank row for separation
+      "Report Summary",
+      `Total Invoices,${totalInvoices}`,
+      `Total Sales,₹${totalSales.toFixed(2)}`,
+      `Total Cash Collection,₹${totalCashCollection.toFixed(2)}`,
+      `Total Online Collection,₹${totalOnlineCollection.toFixed(2)}`
+    ];
+
+    const csvContent = "data:text/csv;charset=utf-8," + csvLines.join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
