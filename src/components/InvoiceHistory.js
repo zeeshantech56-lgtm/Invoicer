@@ -65,6 +65,10 @@ export default function InvoiceHistory() {
 
   const todayCount = todaysInvoices.length;
   const todayTotal = todaysInvoices.reduce((sum, inv) => sum + Number(inv.total || 0), 0);
+  
+  // Calculate today's cash and online collections from payment mode data
+  const todayCashReceived = todaysInvoices.reduce((sum, inv) => sum + Number(inv.cashAmount || 0), 0);
+  const todayOnlineReceived = todaysInvoices.reduce((sum, inv) => sum + Number(inv.onlineAmount || 0), 0);
 
   const applyDateFilter = (invoicesToFilter, filterParams) => {
     const { rangeType, startDate, endDate } = filterParams;
@@ -265,7 +269,8 @@ export default function InvoiceHistory() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        {/* Left Column: Today's Invoices and Today's Sales (stacked) */}
         <div className="grid grid-rows-2 gap-4">
           <div className="bg-gray-50 rounded p-4 border border-gray-100">
             <p className="text-xs text-gray-500 uppercase tracking-wide">Today's Invoices</p>
@@ -276,7 +281,20 @@ export default function InvoiceHistory() {
             <p className="text-2xl font-semibold text-gray-900 mt-1">₹{todayTotal.toFixed(2)}</p>
           </div>
         </div>
+
+        {/* Middle Column: Cash Received and Online Received (stacked) */}
+        <div className="grid grid-rows-2 gap-4">
+          <div className="bg-gray-50 rounded p-4 border border-gray-100">
+            <p className="text-xs text-gray-500 uppercase tracking-wide">Cash Received</p>
+            <p className="text-2xl font-semibold text-gray-900 mt-1">₹{todayCashReceived.toFixed(2)}</p>
+          </div>
+          <div className="bg-gray-50 rounded p-4 border border-gray-100">
+            <p className="text-xs text-gray-500 uppercase tracking-wide">Online Received</p>
+            <p className="text-2xl font-semibold text-gray-900 mt-1">₹{todayOnlineReceived.toFixed(2)}</p>
+          </div>
+        </div>
         
+        {/* Right Column: Sales Trend Chart */}
         <div className="bg-gray-50 rounded p-4 border border-gray-100 flex flex-col justify-end relative">
           <div className="flex justify-between items-center mb-4 absolute top-4 left-4 right-4">
             <p className="text-xs text-gray-500 uppercase tracking-wide">Sales Trend</p>
