@@ -71,6 +71,7 @@ export default function PublicInvoicePage() {
   };
 
   const hasGstin = !!invoice.shopGstin;
+  const paymentMode = invoice.paymentMode || "Unknown";
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-10 print:bg-white print:p-0 print:m-0 print:block">
@@ -119,7 +120,7 @@ export default function PublicInvoicePage() {
               {(invoice.products || []).map((p, i) => {
                 const qty = Number(p.qty) || 0;
                 const price = Number(p.price) || 0;
-                const lineTotal = qty * price + (p.totalGst || 0); // Need to decide if price is inclusive or exclusive. Standard B2B is exclusive. We calculate subtotal = qty*price, so lineTotal = qty*price + totalGst. Wait, previous was (qty * price). Let's use lineSubtotal + totalGst.
+                const lineTotal = qty * price + (p.totalGst || 0); // Need to decide if price is inclusive or exclusive. Standard B2B is exclusive. We calculate subtotal = qty*price, so lineTotal[...]
                 const lineSubtotal = qty * price;
                 return (
                   <tr key={i} className="border-b border-gray-50">
@@ -183,19 +184,56 @@ export default function PublicInvoicePage() {
             </div>
           )}
 
-          {invoice.paymentStatus && (
-            <div className="mt-8 pt-6 border-t border-gray-100 flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Payment Status</p>
-                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium uppercase
-                  ${invoice.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' : 
-                    invoice.paymentStatus === 'partial' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
-                  {invoice.paymentStatus}
-                </span>
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Amount Paid</p>
-                <p className="text-sm font-medium text-gray-900">₹{(invoice.amountPaid || 0).toFixed(2)}</p>
+          {/* Payment Status + Payment Mode Section */}
+          {(invoice.paymentStatus || paymentMode !== "Unknown") && (
+            <div className="mt-8 pt-6 border-t border-gray-100">
+              <div className="grid grid-cols-2 gap-6 mb-6">
+                {/* Payment Status Section */}
+                {invoice.paymentStatus && (
+                  <div>
+                    <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Payment Status</p>
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium uppercase
+                      ${invoice.paymentStatus === 'paid' ? 'bg-green-100 text-green-800' : 
+                        invoice.paymentStatus === 'partial' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
+                      {invoice.paymentStatus}
+                    </span>
+                    <p className="text-xs text-gray-400 uppercase tracking-wide mt-3 mb-1">Amount Paid</p>
+                    <p className="text-sm font-medium text-gray-900">₹{(invoice.amountPaid || 0).toFixed(2)}</p>
+                  </div>
+                )}
+
+                {/* Payment Mode Section */}
+                <div>
+                  <p className="text-xs text-gray-400 uppercase tracking-wide mb-2">Payment Mode</p>
+                  <p className="text-sm font-medium text-gray-900 mb-3">{paymentMode}</p>
+
+                  {paymentMode === "Cash" && (
+                    <div>
+                      <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Cash Amount</p>
+                      <p className="text-sm font-medium text-gray-900">₹{(Number(invoice.cashAmount) || 0).toFixed(2)}</p>
+                    </div>
+                  )}
+
+                  {paymentMode === "Online" && (
+                    <div>
+                      <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Online Amount</p>
+                      <p className="text-sm font-medium text-gray-900">₹{(Number(invoice.onlineAmount) || 0).toFixed(2)}</p>
+                    </div>
+                  )}
+
+                  {paymentMode === "Split" && (
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Cash Amount</p>
+                        <p className="text-sm font-medium text-gray-900">₹{(Number(invoice.cashAmount) || 0).toFixed(2)}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-400 uppercase tracking-wide mb-1">Online Amount</p>
+                        <p className="text-sm font-medium text-gray-900">₹{(Number(invoice.onlineAmount) || 0).toFixed(2)}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           )}
