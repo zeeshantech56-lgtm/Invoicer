@@ -287,8 +287,8 @@ export default function InvoiceForm({ shopName }) {
   };
 
   return (
-    <div className="border border-gray-200 rounded-lg p-6">
-      <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-4">
+    <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+      <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-5">
         New Invoice
       </h2>
 

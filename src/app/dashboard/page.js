@@ -140,12 +140,12 @@ function DashboardContent() {
         </div>
       </header>
 
-      <main className="flex-1 max-w-6xl w-full mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
-          <div className="lg:col-span-2">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-5">
             <InvoiceForm shopName={shopName} />
           </div>
-          <div className="lg:col-span-3">
+          <div className="lg:col-span-7">
             <InvoiceHistory />
           </div>
         </div>

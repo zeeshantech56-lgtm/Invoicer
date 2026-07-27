@@ -309,8 +309,8 @@ export default function InvoiceHistory() {
   const maxChartValue = Math.max(...chartData.map(d => d.total), 1);
 
   return (
-    <div className="border border-gray-200 rounded-lg p-6">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
+      <div className="flex items-center justify-between mb-5">
         <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
           Recent transactions
         </h2>
@@ -326,34 +326,34 @@ export default function InvoiceHistory() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         {/* Left Column: Today's Invoices and Today's Sales (stacked) */}
-        <div className="grid grid-rows-2 gap-4">
-          <div className="bg-gray-50 rounded p-4 border border-gray-100">
+        <div className="grid grid-rows-2 gap-6">
+          <div className="bg-gray-50 rounded-lg p-6 border border-gray-200 shadow-sm">
             <p className="text-xs text-gray-500 uppercase tracking-wide">Today's Invoices</p>
-            <p className="text-2xl font-semibold text-gray-900 mt-1">{todayCount}</p>
+            <p className="text-2xl font-semibold text-gray-900 mt-2">{todayCount}</p>
           </div>
-          <div className="bg-gray-50 rounded p-4 border border-gray-100">
+          <div className="bg-gray-50 rounded-lg p-6 border border-gray-200 shadow-sm">
             <p className="text-xs text-gray-500 uppercase tracking-wide">Today's Sales</p>
-            <p className="text-2xl font-semibold text-gray-900 mt-1">₹{todayTotal.toFixed(2)}</p>
+            <p className="text-2xl font-semibold text-gray-900 mt-2">₹{todayTotal.toFixed(2)}</p>
           </div>
         </div>
 
         {/* Middle Column: Cash Received and Online Received (stacked) */}
-        <div className="grid grid-rows-2 gap-4">
-          <div className="bg-gray-50 rounded p-4 border border-gray-100">
+        <div className="grid grid-rows-2 gap-6">
+          <div className="bg-gray-50 rounded-lg p-6 border border-gray-200 shadow-sm">
             <p className="text-xs text-gray-500 uppercase tracking-wide">Cash Received</p>
-            <p className="text-2xl font-semibold text-gray-900 mt-1">₹{todayCashReceived.toFixed(2)}</p>
+            <p className="text-2xl font-semibold text-gray-900 mt-2">₹{todayCashReceived.toFixed(2)}</p>
           </div>
-          <div className="bg-gray-50 rounded p-4 border border-gray-100">
+          <div className="bg-gray-50 rounded-lg p-6 border border-gray-200 shadow-sm">
             <p className="text-xs text-gray-500 uppercase tracking-wide">Online Received</p>
-            <p className="text-2xl font-semibold text-gray-900 mt-1">₹{todayOnlineReceived.toFixed(2)}</p>
+            <p className="text-2xl font-semibold text-gray-900 mt-2">₹{todayOnlineReceived.toFixed(2)}</p>
           </div>
         </div>
         
         {/* Right Column: Sales Trend Chart */}
-        <div className="bg-gray-50 rounded p-4 border border-gray-100 flex flex-col justify-end relative">
-          <div className="flex justify-between items-center mb-4 absolute top-4 left-4 right-4">
+        <div className="bg-gray-50 rounded-lg p-6 border border-gray-200 shadow-sm flex flex-col justify-end relative">
+          <div className="flex justify-between items-center mb-5 absolute top-6 left-6 right-6">
             <p className="text-xs text-gray-500 uppercase tracking-wide">Sales Trend</p>
             <select
               value={chartFilter}
