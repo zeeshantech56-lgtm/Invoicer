@@ -27,6 +27,7 @@ export default function InvoiceForm({ shopName }) {
   const [frequentItems, setFrequentItems] = useState([]);
   const [paymentStatus, setPaymentStatus] = useState("paid");
   const [amountPaid, setAmountPaid] = useState("");
+  const [discountAmount, setDiscountAmount] = useState(0);
   
   const [shopProfile, setShopProfile] = useState(null);
   const [inventoryProducts, setInventoryProducts] = useState([]);
@@ -81,6 +82,7 @@ export default function InvoiceForm({ shopName }) {
   });
 
   const grandTotal = subtotal + totalGst;
+  const finalAmount = Math.max(0, grandTotal - (Number(discountAmount) || 0));
 
   const updateProduct = (index, field, value) => {
     setProducts((prev) =>
@@ -181,6 +183,13 @@ export default function InvoiceForm({ shopName }) {
         return;
       }
 
+      const numDiscount = Number(discountAmount) || 0;
+      if (numDiscount > grandTotal) {
+        alert("Discount cannot exceed Grand Total.");
+        setSubmitting(false);
+        return;
+      }
+
       const newItems = new Set(frequentItems);
       cleanProducts.forEach(p => {
         if (p.name.trim()) newItems.add(p.name.trim());
@@ -211,8 +220,10 @@ export default function InvoiceForm({ shopName }) {
         totalIgst,
         totalGst,
         grandTotal,
+        discountAmount: numDiscount,
+        finalAmount,
         paymentStatus,
-        amountPaid: paymentStatus === 'paid' ? grandTotal : (paymentStatus === 'unpaid' ? 0 : amountPaid)
+        amountPaid: paymentStatus === 'paid' ? finalAmount : (paymentStatus === 'unpaid' ? 0 : amountPaid)
       });
 
       // Only open WhatsApp if a phone number was provided
@@ -228,7 +239,7 @@ export default function InvoiceForm({ shopName }) {
           siteUrl,
           customFooter,
           paymentStatus,
-          amountPaid: paymentStatus === 'paid' ? grandTotal : (paymentStatus === 'unpaid' ? 0 : amountPaid)
+          amountPaid: paymentStatus === 'paid' ? finalAmount : (paymentStatus === 'unpaid' ? 0 : amountPaid)
         });
         window.open(waUrl, "_blank");
       } else {
@@ -442,8 +453,26 @@ export default function InvoiceForm({ shopName }) {
           )}
           <div className="flex items-center justify-between pt-2 border-t border-gray-100">
             <span className="text-sm font-medium text-gray-700">Grand Total</span>
-            <span className="text-xl font-semibold text-gray-900">
+            <span className="text-lg font-semibold text-gray-900">
               ₹{grandTotal.toFixed(2)}
+            </span>
+          </div>
+          <div className="flex items-center justify-between pt-2">
+            <span className="text-sm font-medium text-gray-700">Discount (₹)</span>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="0"
+              value={discountAmount}
+              onChange={(e) => setDiscountAmount(e.target.value)}
+              className="w-32 border border-gray-300 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 text-right"
+            />
+          </div>
+          <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+            <span className="text-sm font-bold text-gray-900">Final Amount</span>
+            <span className="text-xl font-bold text-gray-900">
+              ₹{finalAmount.toFixed(2)}
             </span>
           </div>
         </div>

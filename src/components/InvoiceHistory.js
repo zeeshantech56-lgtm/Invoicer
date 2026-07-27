@@ -64,7 +64,7 @@ export default function InvoiceHistory() {
   });
 
   const todayCount = todaysInvoices.length;
-  const todayTotal = todaysInvoices.reduce((sum, inv) => sum + Number(inv.total || 0), 0);
+  const todayTotal = todaysInvoices.reduce((sum, inv) => sum + Number(inv.finalAmount ?? inv.total ?? inv.grandTotal ?? 0), 0);
 
   const applyDateFilter = (invoicesToFilter, filterParams) => {
     const { rangeType, startDate, endDate } = filterParams;
@@ -128,20 +128,26 @@ export default function InvoiceHistory() {
       return;
     }
 
-    const headers = ["Date", "Customer", "Phone", "Items", "Total"];
+    const headers = ["Date", "Customer", "Phone", "Items", "Grand Total", "Discount", "Final Amount", "Status"];
     const rows = filteredInvoices.map((inv) => {
       const date = inv.timestamp?.toDate ? inv.timestamp.toDate().toLocaleString() : "Just now";
       const customer = inv.customerName || "";
       const phone = inv.customerPhone || "";
       const items = (inv.products || []).map((p) => `${p.qty}x ${p.name}`).join("; ");
-      const total = inv.total || 0;
+      const grandTotal = inv.grandTotal ?? inv.total ?? 0;
+      const discount = inv.discountAmount ?? 0;
+      const finalAmount = inv.finalAmount ?? grandTotal;
+      const status = inv.paymentStatus ?? "unpaid";
 
       return [
         `"${date}"`,
         `"${customer.replace(/"/g, '""')}"`,
         `"${phone}"`,
         `"${items.replace(/"/g, '""')}"`,
-        total
+        grandTotal,
+        discount,
+        finalAmount,
+        `"${status}"`
       ].join(",");
     });
 
@@ -163,7 +169,7 @@ export default function InvoiceHistory() {
       shopName: inv.shopName || "My Shop",
       customerName: inv.customerName,
       products: inv.products || [],
-      total: inv.total || 0,
+      total: inv.finalAmount ?? inv.total ?? inv.grandTotal ?? 0,
       invoiceId: inv.id,
       siteUrl,
       customFooter,
@@ -235,12 +241,12 @@ export default function InvoiceHistory() {
       d.setHours(0, 0, 0, 0);
       const dayMatch = chartData.find(c => c.key === d.getTime());
       if (dayMatch) {
-        dayMatch.total += Number(inv.total || 0);
+        dayMatch.total += Number(inv.finalAmount ?? inv.total ?? inv.grandTotal ?? 0);
       }
     } else if (chartFilter === "6m") {
       const match = chartData.find(c => c.date.getMonth() === invDate.getMonth() && c.date.getFullYear() === invDate.getFullYear());
       if (match) {
-        match.total += Number(inv.total || 0);
+        match.total += Number(inv.finalAmount ?? inv.total ?? inv.grandTotal ?? 0);
       }
     }
   });
@@ -336,7 +342,7 @@ export default function InvoiceHistory() {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Update Payment</h3>
             <p className="text-sm text-gray-500 mb-4">
               Invoice for <span className="font-medium text-gray-900">{editingPayment.customerName}</span><br/>
-              Total: ₹{Number(editingPayment.total || editingPayment.grandTotal || 0).toFixed(2)}
+              Final Amount: ₹{Number(editingPayment.finalAmount ?? editingPayment.total ?? editingPayment.grandTotal ?? 0).toFixed(2)}
             </p>
             <form onSubmit={handleUpdatePayment} className="space-y-4">
               <div>
@@ -414,7 +420,7 @@ export default function InvoiceHistory() {
                     {(inv.products || []).map((p) => `${p.qty}x ${p.name}`).join(", ")}
                   </td>
                   <td className="py-2 pr-4 text-gray-900 font-medium">
-                    ₹{Number(inv.total || inv.grandTotal || 0).toFixed(2)}
+                    ₹{Number(inv.finalAmount ?? inv.total ?? inv.grandTotal ?? 0).toFixed(2)}
                   </td>
                   <td className="py-2 pr-4">
                     <button onClick={() => openPaymentModal(inv)} className="hover:opacity-80">

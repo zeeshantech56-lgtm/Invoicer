@@ -33,6 +33,7 @@ export async function createInvoice({
   shopId, shopName, shopGstin, shopStateCode, shopAddress,
   customerName, customerPhone, customerStateCode, customerGstin,
   products, isInterState, subtotal, totalCgst, totalSgst, totalIgst, totalGst, grandTotal,
+  discountAmount, finalAmount,
   paymentStatus, amountPaid
 }) {
   return await runTransaction(db, async (transaction) => {
@@ -86,13 +87,15 @@ export async function createInvoice({
       totalGst: Number(totalGst) || 0,
       total: Number(grandTotal) || 0, // Keep total field for backward compatibility
       grandTotal: Number(grandTotal) || 0,
+      discountAmount: Number(discountAmount) || 0,
+      finalAmount: finalAmount !== undefined ? Number(finalAmount) : (Number(grandTotal) || 0),
       paymentStatus: paymentStatus || "paid",
-      amountPaid: amountPaid !== undefined ? Number(amountPaid) : (Number(grandTotal) || 0),
+      amountPaid: amountPaid !== undefined ? Number(amountPaid) : (finalAmount !== undefined ? Number(finalAmount) : (Number(grandTotal) || 0)),
       timestamp: serverTimestamp(),
       createdAt: serverTimestamp(),
     });
 
-    return { id: invoiceRef.id, total: Number(grandTotal) || 0 };
+    return { id: invoiceRef.id, total: finalAmount !== undefined ? Number(finalAmount) : (Number(grandTotal) || 0) };
   });
 }
 

@@ -71,6 +71,8 @@ export default function PublicInvoicePage() {
   };
 
   const hasGstin = !!invoice.shopGstin;
+  const discountAmount = Number(invoice.discountAmount || 0);
+  const finalAmount = invoice.finalAmount !== undefined ? Number(invoice.finalAmount) : Number(invoice.grandTotal || invoice.total || 0);
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-10 print:bg-white print:p-0 print:m-0 print:block">
@@ -162,9 +164,17 @@ export default function PublicInvoicePage() {
                     </div>
                   </>
                 )}
-                <div className="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t border-gray-200 mt-2">
+                <div className="flex justify-between text-sm font-medium text-gray-900 pt-2 border-t border-gray-200 mt-2">
                   <span>Grand Total</span>
                   <span>₹{(invoice.grandTotal || 0).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>Discount</span>
+                  <span>₹{discountAmount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t border-gray-200 mt-2">
+                  <span>Final Amount</span>
+                  <span>₹{finalAmount.toFixed(2)}</span>
                 </div>
               </div>
             </div>
@@ -175,9 +185,17 @@ export default function PublicInvoicePage() {
                   <span>Subtotal</span>
                   <span>₹{(invoice.total || 0).toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t border-gray-200 mt-2">
+                <div className="flex justify-between text-sm font-medium text-gray-900 pt-2 border-t border-gray-200 mt-2">
                   <span>Grand Total</span>
                   <span>₹{(invoice.total || 0).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm text-gray-600">
+                  <span>Discount</span>
+                  <span>₹{discountAmount.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t border-gray-200 mt-2">
+                  <span>Final Amount</span>
+                  <span>₹{finalAmount.toFixed(2)}</span>
                 </div>
               </div>
             </div>
