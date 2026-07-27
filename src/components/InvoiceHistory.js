@@ -55,6 +55,15 @@ export default function InvoiceHistory() {
     return timestamp.toDate().toLocaleString();
   };
 
+  const formatDateForCSV = (timestamp) => {
+    if (!timestamp?.toDate) return "";
+    const date = timestamp.toDate();
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = date.toLocaleString('en-US', { month: 'short' });
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+  };
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -65,6 +74,10 @@ export default function InvoiceHistory() {
 
   const todayCount = todaysInvoices.length;
   const todayTotal = todaysInvoices.reduce((sum, inv) => sum + Number(inv.finalAmount ?? inv.total ?? inv.grandTotal ?? 0), 0);
+  
+  // Calculate today's cash and online collections from payment mode data
+  const todayCashReceived = todaysInvoices.reduce((sum, inv) => sum + Number(inv.cashAmount || 0), 0);
+  const todayOnlineReceived = todaysInvoices.reduce((sum, inv) => sum + Number(inv.onlineAmount || 0), 0);
 
   const applyDateFilter = (invoicesToFilter, filterParams) => {
     const { rangeType, startDate, endDate } = filterParams;
@@ -128,18 +141,39 @@ export default function InvoiceHistory() {
       return;
     }
 
-    const headers = ["Date", "Customer", "Phone", "Items", "Grand Total", "Discount", "Final Amount", "Status"];
+    // Enhanced headers with all required columns
+    const headers = [
+      "Invoice No",
+      "Date",
+      "Customer",
+      "Phone",
+      "Items",
+      "Grand Total",
+      "Discount",
+      "Final Amount",
+      "Cash Amount",
+      "Online Amount",
+      "Payment Mode",
+      "Status"
+    ];
+
+    // Generate CSV rows with enhanced data
     const rows = filteredInvoices.map((inv) => {
-      const date = inv.timestamp?.toDate ? inv.timestamp.toDate().toLocaleString() : "Just now";
+      const invoiceNo = `INV${inv.id.slice(0, 8).toUpperCase()}`;
+      const date = formatDateForCSV(inv.timestamp);
       const customer = inv.customerName || "";
       const phone = inv.customerPhone || "";
       const items = (inv.products || []).map((p) => `${p.qty}x ${p.name}`).join("; ");
       const grandTotal = inv.grandTotal ?? inv.total ?? 0;
       const discount = inv.discountAmount ?? 0;
       const finalAmount = inv.finalAmount ?? grandTotal;
-      const status = inv.paymentStatus ?? "unpaid";
+      const cashAmount = Number(inv.cashAmount || 0);
+      const onlineAmount = Number(inv.onlineAmount || 0);
+      const paymentMode = inv.paymentMode || "Unknown";
+      const status = inv.paymentStatus || "unpaid";
 
       return [
+        `"${invoiceNo}"`,
         `"${date}"`,
         `"${customer.replace(/"/g, '""')}"`,
         `"${phone}"`,
@@ -147,11 +181,32 @@ export default function InvoiceHistory() {
         grandTotal,
         discount,
         finalAmount,
+        cashAmount,
+        onlineAmount,
+        `"${paymentMode}"`,
         `"${status}"`
       ].join(",");
     });
 
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows].join("\n");
+    // Calculate summary statistics
+    const totalInvoices = filteredInvoices.length;
+    const totalSales = filteredInvoices.reduce((sum, inv) => sum + Number(inv.finalAmount ?? inv.total ?? inv.grandTotal ?? 0), 0);
+    const totalCashCollection = filteredInvoices.reduce((sum, inv) => sum + Number(inv.cashAmount || 0), 0);
+    const totalOnlineCollection = filteredInvoices.reduce((sum, inv) => sum + Number(inv.onlineAmount || 0), 0);
+
+    // Build CSV content with headers, data rows, blank row, and summary
+    const csvLines = [
+      headers.join(","),
+      ...rows,
+      "", // Blank row for separation
+      "Report Summary",
+      `Total Invoices,${totalInvoices}`,
+      `Total Sales,₹${totalSales.toFixed(2)}`,
+      `Total Cash Collection,₹${totalCashCollection.toFixed(2)}`,
+      `Total Online Collection,₹${totalOnlineCollection.toFixed(2)}`
+    ];
+
+    const csvContent = "data:text/csv;charset=utf-8," + csvLines.join("\n");
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -271,7 +326,8 @@ export default function InvoiceHistory() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        {/* Left Column: Today's Invoices and Today's Sales (stacked) */}
         <div className="grid grid-rows-2 gap-4">
           <div className="bg-gray-50 rounded p-4 border border-gray-100">
             <p className="text-xs text-gray-500 uppercase tracking-wide">Today's Invoices</p>
@@ -282,7 +338,20 @@ export default function InvoiceHistory() {
             <p className="text-2xl font-semibold text-gray-900 mt-1">₹{todayTotal.toFixed(2)}</p>
           </div>
         </div>
+
+        {/* Middle Column: Cash Received and Online Received (stacked) */}
+        <div className="grid grid-rows-2 gap-4">
+          <div className="bg-gray-50 rounded p-4 border border-gray-100">
+            <p className="text-xs text-gray-500 uppercase tracking-wide">Cash Received</p>
+            <p className="text-2xl font-semibold text-gray-900 mt-1">₹{todayCashReceived.toFixed(2)}</p>
+          </div>
+          <div className="bg-gray-50 rounded p-4 border border-gray-100">
+            <p className="text-xs text-gray-500 uppercase tracking-wide">Online Received</p>
+            <p className="text-2xl font-semibold text-gray-900 mt-1">₹{todayOnlineReceived.toFixed(2)}</p>
+          </div>
+        </div>
         
+        {/* Right Column: Sales Trend Chart */}
         <div className="bg-gray-50 rounded p-4 border border-gray-100 flex flex-col justify-end relative">
           <div className="flex justify-between items-center mb-4 absolute top-4 left-4 right-4">
             <p className="text-xs text-gray-500 uppercase tracking-wide">Sales Trend</p>

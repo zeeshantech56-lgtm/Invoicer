@@ -12,6 +12,7 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { calculateGstBreakdown } from "@/lib/gst";
 import { INDIAN_STATES } from "@/lib/constants";
+import { validatePaymentMode } from "@/lib/paymentHelpers";
 
 const emptyProduct = () => ({ name: "", qty: 1, price: "", productId: "", hsnCode: "", gstRate: "18" });
 
@@ -28,6 +29,9 @@ export default function InvoiceForm({ shopName }) {
   const [paymentStatus, setPaymentStatus] = useState("paid");
   const [amountPaid, setAmountPaid] = useState("");
   const [discountAmount, setDiscountAmount] = useState(0);
+  const [paymentMode, setPaymentMode] = useState("Cash");
+  const [cashAmount, setCashAmount] = useState("");
+  const [onlineAmount, setOnlineAmount] = useState("");
   
   const [shopProfile, setShopProfile] = useState(null);
   const [inventoryProducts, setInventoryProducts] = useState([]);
@@ -83,6 +87,18 @@ export default function InvoiceForm({ shopName }) {
 
   const grandTotal = subtotal + totalGst;
   const finalAmount = Math.max(0, grandTotal - (Number(discountAmount) || 0));
+
+  // Auto-fill payment amounts based on mode
+  useEffect(() => {
+    if (paymentMode === "Cash") {
+      setCashAmount(finalAmount.toFixed(2));
+      setOnlineAmount("0");
+    } else if (paymentMode === "Online") {
+      setCashAmount("0");
+      setOnlineAmount(finalAmount.toFixed(2));
+    }
+    // For Split, user manually enters values
+  }, [paymentMode, finalAmount]);
 
   const updateProduct = (index, field, value) => {
     setProducts((prev) =>
@@ -144,6 +160,9 @@ export default function InvoiceForm({ shopName }) {
     setCustomerStateCode("");
     setCustomerGstin("");
     setProducts([emptyProduct()]);
+    setPaymentMode("Cash");
+    setCashAmount("");
+    setOnlineAmount("");
   };
 
   const handleSubmit = async (e) => {
@@ -190,6 +209,16 @@ export default function InvoiceForm({ shopName }) {
         return;
       }
 
+      // Validate payment mode against Final Amount
+      const cash = Number(cashAmount) || 0;
+      const online = Number(onlineAmount) || 0;
+      const validation = validatePaymentMode(paymentMode, cash, online, finalAmount);
+      if (!validation.valid) {
+        alert(validation.error);
+        setSubmitting(false);
+        return;
+      }
+
       const newItems = new Set(frequentItems);
       cleanProducts.forEach(p => {
         if (p.name.trim()) newItems.add(p.name.trim());
@@ -223,7 +252,10 @@ export default function InvoiceForm({ shopName }) {
         discountAmount: numDiscount,
         finalAmount,
         paymentStatus,
-        amountPaid: paymentStatus === 'paid' ? finalAmount : (paymentStatus === 'unpaid' ? 0 : amountPaid)
+        amountPaid: paymentStatus === 'paid' ? finalAmount : (paymentStatus === 'unpaid' ? 0 : amountPaid),
+        paymentMode,
+        cashAmount: cash,
+        onlineAmount: online
       });
 
       // Only open WhatsApp if a phone number was provided
@@ -475,6 +507,54 @@ export default function InvoiceForm({ shopName }) {
               ₹{finalAmount.toFixed(2)}
             </span>
           </div>
+        </div>
+
+        {/* Payment Mode Section */}
+        <div className="pt-2 border-t border-gray-200">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Payment Mode <span className="text-red-500">*</span>
+          </label>
+          <select
+            value={paymentMode}
+            onChange={(e) => setPaymentMode(e.target.value)}
+            className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 bg-white mb-3"
+            required
+          >
+            <option value="Cash">Cash</option>
+            <option value="Online">Online</option>
+            <option value="Split">Split Payment</option>
+          </select>
+
+          {paymentMode === "Split" && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 bg-gray-50 p-3 rounded border border-gray-200">
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Cash Amount (₹)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={cashAmount}
+                  onChange={(e) => setCashAmount(e.target.value)}
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-600 mb-1">Online Amount (₹)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={onlineAmount}
+                  onChange={(e) => setOnlineAmount(e.target.value)}
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+                  required
+                />
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="pt-2">
