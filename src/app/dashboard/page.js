@@ -15,13 +15,47 @@ import InvoiceHistory from "@/components/InvoiceHistory";
 import Logo from "@/components/Logo";
 import { useAccessStatus } from "@/lib/access";
 
+// ─── Sidebar nav item ───────────────────────────────────────────────────────
+function NavItem({ href, icon, label, active }) {
+  return (
+    <Link
+      href={href}
+      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150
+        ${active
+          ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/25"
+          : "text-slate-400 hover:text-white hover:bg-white/8"
+        }`}
+    >
+      <span className="text-base leading-none">{icon}</span>
+      <span>{label}</span>
+    </Link>
+  );
+}
+
+// ─── Alert banner ────────────────────────────────────────────────────────────
+function AlertBanner({ color, children }) {
+  const colors = {
+    blue:   "bg-indigo-600/90",
+    amber:  "bg-amber-500/90",
+    red:    "bg-red-500/90",
+    rose:   "bg-rose-600/90",
+  };
+  return (
+    <div className={`${colors[color]} text-white text-xs font-medium text-center py-2.5 px-4 backdrop-blur-sm`}>
+      {children}
+    </div>
+  );
+}
+
+// ─── Main content ────────────────────────────────────────────────────────────
 function DashboardContent() {
   const { user, isAdmin } = useAuth();
-  const [shopName, setShopName] = useState("");
-  const [userData, setUserData] = useState(null);
+  const [shopName, setShopName]       = useState("");
+  const [userData, setUserData]       = useState(null);
   const [announcement, setAnnouncement] = useState("");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading]         = useState(true);
   const [lowStockItems, setLowStockItems] = useState([]);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     const fetchShopProfile = async () => {
@@ -40,7 +74,9 @@ function DashboardContent() {
       const { collection, query, getDocs } = await import("firebase/firestore");
       const q = query(collection(db, "users", user.uid, "products"));
       const snap = await getDocs(q);
-      const low = snap.docs.map(d => ({id: d.id, ...d.data()})).filter(p => (p.stockQty || 0) <= (p.lowStockThreshold || 10));
+      const low = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(p => (p.stockQty || 0) <= (p.lowStockThreshold || 10));
       setLowStockItems(low);
     };
     fetchLowStock();
@@ -52,117 +88,174 @@ function DashboardContent() {
     fetchAnnouncement();
   }, [user]);
 
-  const handleLogout = async () => {
-    await signOut(auth);
-  };
+  const handleLogout = async () => { await signOut(auth); };
 
-  const { isTrial, isSubscribed, daysLeftTrial, daysLeftSub, expiryDateString } = useAccessStatus(userData);
+  const { isTrial, isSubscribed, daysLeftTrial, daysLeftSub, expiryDateString } =
+    useAccessStatus(userData);
 
   if (loading) {
-    return <div className="min-h-screen bg-gray-50 flex items-center justify-center">Loading...</div>;
+    return (
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <div className="w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-slate-400 text-sm">Loading your dashboard…</p>
+        </div>
+      </div>
+    );
   }
 
+  // Sidebar links
+  const navLinks = [
+    { href: "/dashboard",            icon: "⚡", label: "Dashboard", active: true  },
+    { href: "/dashboard/inventory",  icon: "📦", label: "Inventory",  active: false },
+    { href: "/dashboard/purchases",  icon: "🛒", label: "Purchases",  active: false },
+    { href: "/dashboard/settings",   icon: "⚙️",  label: "Settings",   active: false },
+    ...(isAdmin ? [{ href: "/admin", icon: "🛡️", label: "Admin",      active: false }] : []),
+  ];
+
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      {announcement && (
-        <div className="bg-blue-600 text-white text-xs font-medium text-center py-2 px-4 shadow-sm">
-          {announcement}
-        </div>
-      )}
+    <div className="min-h-screen bg-[#0f1117] flex flex-col">
+
+      {/* ── Alert banners ───────────────────────────────────────────────── */}
+      {announcement && <AlertBanner color="blue">{announcement}</AlertBanner>}
       {!isAdmin && isTrial && !isSubscribed && (
-        <div className="bg-amber-500 text-white text-xs font-medium text-center py-2 px-4 shadow-sm">
-          You are on a Free Trial. {daysLeftTrial} day{daysLeftTrial !== 1 ? 's' : ''} remaining until it expires.
-        </div>
+        <AlertBanner color="amber">
+          Free Trial — {daysLeftTrial} day{daysLeftTrial !== 1 ? "s" : ""} remaining.{" "}
+          <Link href="/pricing" className="underline font-semibold">Upgrade now →</Link>
+        </AlertBanner>
       )}
       {!isAdmin && isSubscribed && daysLeftSub <= 7 && (
-        <div className="bg-red-500 text-white text-xs font-medium text-center py-2 px-4 shadow-sm">
-          Warning: Payment due on {expiryDateString}. Please renew to avoid interruption.
-        </div>
+        <AlertBanner color="red">
+          Subscription expires on {expiryDateString}. Please renew to avoid interruption.
+        </AlertBanner>
       )}
       {lowStockItems.length > 0 && (
-        <div className="bg-rose-600 text-white text-xs font-medium text-center py-2 px-4 shadow-sm">
-          Low Stock Alert: {lowStockItems.map(item => `${item.name} (${item.stockQty || 0} left)`).join(", ")}
-        </div>
+        <AlertBanner color="rose">
+          ⚠ Low Stock: {lowStockItems.map(i => `${i.name} (${i.stockQty || 0} left)`).join(" · ")}
+        </AlertBanner>
       )}
-      <header className="bg-white border-b border-gray-200 px-4 sm:px-6 py-3 sm:py-4 flex flex-wrap items-center justify-between gap-y-3 gap-x-2 relative z-10">
-        <div className="flex items-center gap-2 sm:gap-6">
-          <Link href="/">
-            <Logo size="sm" />
-          </Link>
-          <Link
-            href="/"
-            className="text-xs font-semibold bg-gray-50 text-gray-700 border border-gray-200 px-2 sm:px-3 py-1.5 rounded-full hover:bg-gray-100 transition flex items-center gap-1 whitespace-nowrap"
-          >
-            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-            </svg>
-            <span className="hidden sm:inline">Back to Home</span>
-            <span className="sm:hidden">Home</span>
-          </Link>
-        </div>
-        <div className="flex items-center gap-2 sm:gap-4 ml-auto">
-          <Link
-            href="/dashboard/inventory"
-            className="text-xs sm:text-sm text-gray-600 border border-gray-200 bg-white rounded-lg shadow-sm px-2 sm:px-3 py-1.5 hover:bg-gray-50 whitespace-nowrap transition"
-          >
-            Inventory
-          </Link>
-          <Link
-            href="/dashboard/purchases"
-            className="text-xs sm:text-sm text-gray-600 border border-gray-200 bg-white rounded-lg shadow-sm px-2 sm:px-3 py-1.5 hover:bg-gray-50 whitespace-nowrap transition"
-          >
-            Purchases
-          </Link>
-          <Link
-            href="/dashboard/settings"
-            className="text-xs sm:text-sm text-gray-600 border border-gray-200 bg-white rounded-lg shadow-sm px-2 sm:px-3 py-1.5 hover:bg-gray-50 whitespace-nowrap transition"
-          >
-            Settings
-          </Link>
-          {isAdmin && (
-            <Link
-              href="/admin"
-              className="text-xs sm:text-sm text-gray-600 border border-gray-200 bg-white rounded-lg shadow-sm px-2 sm:px-3 py-1.5 hover:bg-gray-50 whitespace-nowrap transition"
+
+      <div className="flex flex-1 overflow-hidden">
+
+        {/* ══════════════════════════════════════════════════════════════
+            SIDEBAR — hidden on mobile, fixed on desktop
+        ══════════════════════════════════════════════════════════════ */}
+        {/* Mobile overlay */}
+        {sidebarOpen && (
+          <div
+            className="fixed inset-0 z-30 bg-black/60 backdrop-blur-sm lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
+        <aside
+          className={`fixed inset-y-0 left-0 z-40 w-64 bg-[#0d1117] border-r border-white/6
+            flex flex-col transform transition-transform duration-300 ease-in-out
+            ${sidebarOpen ? "translate-x-0" : "-translate-x-full"} lg:translate-x-0 lg:static lg:z-auto`}
+        >
+          {/* Logo */}
+          <div className="flex items-center gap-3 px-5 py-5 border-b border-white/6">
+            <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-indigo-500/30">
+              I
+            </div>
+            <div>
+              <p className="text-white font-bold text-sm tracking-tight leading-tight">Invoicer</p>
+              <p className="text-slate-500 text-[10px] truncate max-w-[140px]">{shopName || user?.email}</p>
+            </div>
+          </div>
+
+          {/* Nav */}
+          <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+            <p className="text-[10px] font-semibold text-slate-600 uppercase tracking-widest px-3 mb-2">Menu</p>
+            {navLinks.map(l => <NavItem key={l.href} {...l} />)}
+          </nav>
+
+          {/* User block + Logout */}
+          <div className="px-3 pb-4 border-t border-white/6 pt-3 space-y-2">
+            <div className="flex items-center gap-3 px-3 py-2">
+              <div className="w-8 h-8 rounded-full bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 text-xs font-bold shrink-0">
+                {(shopName || user?.email || "?")[0].toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <p className="text-white text-xs font-semibold truncate">{shopName || "Dashboard"}</p>
+                <p className="text-slate-500 text-[10px] truncate">{user?.email}</p>
+              </div>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-2 px-3 py-2.5 text-slate-400 hover:text-white hover:bg-white/6 rounded-xl text-sm font-medium transition-all"
             >
-              Admin
-            </Link>
-          )}
-          <div className="text-right hidden sm:block ml-2">
-            <p className="text-sm font-semibold text-gray-900 leading-tight">{shopName || "Dashboard"}</p>
-            <p className="text-xs text-gray-500">{user?.email}</p>
+              <span>↩</span> Sign out
+            </button>
           </div>
-          <button
-            onClick={handleLogout}
-            className="text-xs sm:text-sm text-gray-600 border border-gray-200 bg-white rounded-lg shadow-sm px-2 sm:px-3 py-1.5 hover:bg-gray-50 whitespace-nowrap transition ml-1"
-          >
-            Sign out
-          </button>
-        </div>
-      </header>
+        </aside>
 
-      <main className="flex-1 max-w-[1400px] w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-10">
-        <div className="flex flex-col lg:grid lg:grid-cols-12 gap-8 lg:gap-10">
-          
-          {/* Left Panel: Invoice Form */}
-          <div className="lg:col-span-5 order-1 lg:order-none flex flex-col">
-            <div className="mb-4 lg:mb-6 px-1">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">New Invoice</h1>
-              <p className="text-sm text-gray-500 mt-1">Create and send a new invoice to your customer.</p>
-            </div>
-            <InvoiceForm shopName={shopName} />
-          </div>
-          
-          {/* Right Panel: Analytics & History */}
-          <div className="lg:col-span-7 order-2 lg:order-none mt-8 lg:mt-0 flex flex-col">
-            <div className="mb-4 lg:mb-6 px-1">
-              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">Recent Transactions</h1>
-              <p className="text-sm text-gray-500 mt-1">Monitor your latest sales, payments, and trends.</p>
-            </div>
-            <InvoiceHistory />
-          </div>
+        {/* ══════════════════════════════════════════════════════════════
+            MAIN AREA
+        ══════════════════════════════════════════════════════════════ */}
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
 
+          {/* ── Top bar (mobile + desktop) ─────────────────────────── */}
+          <header className="bg-[#0d1117] border-b border-white/6 flex items-center gap-3 px-4 sm:px-6 py-3.5 shrink-0">
+            {/* Mobile hamburger */}
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="lg:hidden text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-white/8 transition"
+              aria-label="Open sidebar"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
+
+            {/* Page title */}
+            <div className="flex-1 min-w-0">
+              <h1 className="text-white font-bold text-base sm:text-lg tracking-tight truncate">Dashboard</h1>
+              <p className="text-slate-500 text-xs hidden sm:block">Create invoices and track your sales</p>
+            </div>
+
+            {/* Right actions */}
+            <div className="flex items-center gap-2 shrink-0">
+              <Link
+                href="/"
+                className="hidden sm:flex items-center gap-1.5 text-xs text-slate-400 hover:text-white border border-white/10 px-3 py-1.5 rounded-lg hover:bg-white/6 transition"
+              >
+                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+                Home
+              </Link>
+            </div>
+          </header>
+
+          {/* ── Scrollable content ─────────────────────────────────── */}
+          <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
+            <div className="max-w-[1400px] mx-auto">
+
+              {/* Mobile: stacked, Desktop: side-by-side (5/7 split) */}
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 lg:gap-8 items-start">
+
+                {/* ── LEFT: Invoice Form ──────────────────────────── */}
+                <div className="xl:col-span-5 space-y-1">
+                  <div className="mb-4">
+                    <h2 className="text-white font-bold text-lg tracking-tight">New Invoice</h2>
+                    <p className="text-slate-500 text-sm mt-0.5">Fill in customer details and products below.</p>
+                  </div>
+                  <InvoiceForm shopName={shopName} />
+                </div>
+
+                {/* ── RIGHT: Analytics & History ─────────────────── */}
+                <div className="xl:col-span-7 space-y-1">
+                  <div className="mb-4">
+                    <h2 className="text-white font-bold text-lg tracking-tight">Transactions & Analytics</h2>
+                    <p className="text-slate-500 text-sm mt-0.5">Live data from your last 180 days of activity.</p>
+                  </div>
+                  <InvoiceHistory />
+                </div>
+
+              </div>
+            </div>
+          </main>
         </div>
-      </main>
+      </div>
     </div>
   );
 }
