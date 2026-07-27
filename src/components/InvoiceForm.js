@@ -287,13 +287,9 @@ export default function InvoiceForm({ shopName }) {
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
-      <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide mb-5">
-        New Invoice
-      </h2>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5 sm:p-6 lg:p-8 flex-1">
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label className="block text-xs font-medium text-gray-600 mb-1">Customer Name</label>
             <input
@@ -474,23 +470,23 @@ export default function InvoiceForm({ shopName }) {
           {hasGstin && (
             <>
               <div className="flex items-center justify-between text-sm text-gray-500">
-                <span>Subtotal</span>
-                <span>₹{subtotal.toFixed(2)}</span>
+                <span className="text-gray-600 font-medium w-32 shrink-0">Subtotal</span>
+                <span className="font-semibold text-gray-900 w-32 text-right">₹{subtotal.toFixed(2)}</span>
               </div>
-              <div className="flex items-center justify-between text-sm text-gray-500">
-                <span>Total GST</span>
-                <span>₹{totalGst.toFixed(2)}</span>
+              <div className="flex justify-between items-center text-sm">
+                <span className="text-gray-600 font-medium w-32 shrink-0">Total GST</span>
+                <span className="font-semibold text-gray-900 w-32 text-right">₹{totalGst.toFixed(2)}</span>
               </div>
             </>
           )}
-          <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+          <div className="flex justify-between items-center pt-4 mt-2 border-t border-gray-200">
             <span className="text-sm font-medium text-gray-700">Grand Total</span>
             <span className="text-lg font-semibold text-gray-900">
               ₹{grandTotal.toFixed(2)}
             </span>
           </div>
-          <div className="flex items-center justify-between pt-2">
-            <span className="text-sm font-medium text-gray-700">Discount (₹)</span>
+          <div className="flex justify-between items-center text-sm">
+            <span className="text-gray-600 font-medium w-32 shrink-0">Discount (-)</span>
             <input
               type="number"
               min="0"
@@ -501,9 +497,9 @@ export default function InvoiceForm({ shopName }) {
               className="w-32 border border-gray-300 rounded px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 text-right"
             />
           </div>
-          <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-            <span className="text-sm font-bold text-gray-900">Final Amount</span>
-            <span className="text-xl font-bold text-gray-900">
+          <div className="flex justify-between items-center pt-4 mt-2 border-t border-gray-200">
+            <span className="text-lg font-bold text-gray-900 w-32 shrink-0">Final Amount</span>
+            <span className="text-xl font-bold text-gray-900 w-32 text-right">
               ₹{finalAmount.toFixed(2)}
             </span>
           </div>

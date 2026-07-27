@@ -309,11 +309,8 @@ export default function InvoiceHistory() {
   const maxChartValue = Math.max(...chartData.map(d => d.total), 1);
 
   return (
-    <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-6">
-      <div className="flex items-center justify-between mb-5">
-        <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wide">
-          Recent transactions
-        </h2>
+    <div className="bg-white border border-gray-200 rounded-xl shadow-sm p-5 sm:p-6 lg:p-8 flex-1">
+      <div className="flex items-center justify-end mb-5">
         <div className="flex items-center gap-4">
           <span className="text-xs text-gray-400">Last {RETENTION_DAYS} days</span>
           <button
