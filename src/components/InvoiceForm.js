@@ -112,10 +112,8 @@ export default function InvoiceForm({ shopName }) {
   const grandTotal  = subtotal + totalGst;
   const finalAmount = Math.max(0, grandTotal - (Number(discountAmount) || 0));
 
-  useEffect(() => {
-    if (paymentMode === "Cash")   { setCashAmount(finalAmount.toFixed(2)); setOnlineAmount("0"); }
-    if (paymentMode === "Online") { setCashAmount("0"); setOnlineAmount(finalAmount.toFixed(2)); }
-  }, [paymentMode, finalAmount]);
+  // Cash/Online amounts are now handled in the submit validation instead of causing re-renders
+  // on every keystroke that changes finalAmount.
 
   const updateProduct = (i, field, val) => setProducts(prev => prev.map((p, idx) => {
     if (idx !== i) return p;
@@ -164,7 +162,9 @@ export default function InvoiceForm({ shopName }) {
       if (clean.some(p => p.qty <= 0 || p.price < 0)) { alert("Quantity must be > 0 and price cannot be negative."); setSubmitting(false); return; }
       const numDiscount = Number(discountAmount) || 0;
       if (numDiscount > grandTotal) { alert("Discount cannot exceed Grand Total."); setSubmitting(false); return; }
-      const cash = Number(cashAmount) || 0, online = Number(onlineAmount) || 0;
+      let cash = Number(cashAmount) || 0, online = Number(onlineAmount) || 0;
+      if (paymentMode === "Cash" && !cashAmount) cash = finalAmount;
+      if (paymentMode === "Online" && !onlineAmount) online = finalAmount;
       const v = validatePaymentMode(paymentMode, cash, online, finalAmount);
       if (!v.valid) { alert(v.error); setSubmitting(false); return; }
       const ni = new Set(frequentItems);

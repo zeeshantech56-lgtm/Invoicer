@@ -1,7 +1,7 @@
 // src/components/InvoiceHistory.js
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { subscribeToShopInvoices, RETENTION_DAYS, buildWhatsAppUrl } from "@/lib/invoices";
@@ -87,12 +87,17 @@ export default function InvoiceHistory() {
   const fmt = ts => !ts?.toDate ? "Just now" : ts.toDate().toLocaleString("en-IN", { day:"2-digit", month:"short", hour:"2-digit", minute:"2-digit" });
   const fmtCSV = ts => { if (!ts?.toDate) return ""; const d = ts.toDate(); return `${String(d.getDate()).padStart(2,"0")}-${d.toLocaleString("en-US",{month:"short"})}-${d.getFullYear()}`; };
 
-  const today = new Date(); today.setHours(0,0,0,0);
-  const todaysInv   = invoices.filter(inv => { if (!inv.timestamp?.toDate) return true; return inv.timestamp.toDate() >= today; });
-  const todayCount  = todaysInv.length;
-  const todayTotal  = todaysInv.reduce((s,inv) => s + Number(inv.finalAmount ?? inv.total ?? inv.grandTotal ?? 0), 0);
-  const todayCash   = todaysInv.reduce((s,inv) => s + Number(inv.cashAmount   || 0), 0);
-  const todayOnline = todaysInv.reduce((s,inv) => s + Number(inv.onlineAmount || 0), 0);
+  const { todaysInv, todayCount, todayTotal, todayCash, todayOnline } = useMemo(() => {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const filtered = invoices.filter(inv => { if (!inv.timestamp?.toDate) return true; return inv.timestamp.toDate() >= today; });
+    return {
+      todaysInv: filtered,
+      todayCount: filtered.length,
+      todayTotal: filtered.reduce((s,inv) => s + Number(inv.finalAmount ?? inv.total ?? inv.grandTotal ?? 0), 0),
+      todayCash: filtered.reduce((s,inv) => s + Number(inv.cashAmount || 0), 0),
+      todayOnline: filtered.reduce((s,inv) => s + Number(inv.onlineAmount || 0), 0)
+    };
+  }, [invoices]);
 
   const applyDateFilter = (list, { rangeType, startDate, endDate }) => {
     const now = new Date(), sD = d => new Date(d.getFullYear(),d.getMonth(),d.getDate()), eD = d => new Date(d.getFullYear(),d.getMonth(),d.getDate(),23,59,59,999);
@@ -143,17 +148,20 @@ export default function InvoiceHistory() {
   const openModal = inv => { setEditingPayment(inv); setPaymentStatus(inv.paymentStatus||"unpaid"); setAmountPaid(inv.amountPaid||0); };
 
   // ── Chart ─────────────────────────────────────────────────────────────────
-  let chartData = [];
-  if (chartFilter==="7d")  chartData = Array.from({length:7}).map((_,i)=>{ const d=new Date(); d.setDate(d.getDate()-(6)+i); d.setHours(0,0,0,0); return {date:d,key:d.getTime(),total:0,label:d.toLocaleDateString(undefined,{weekday:"short"})}; });
-  if (chartFilter==="30d") chartData = Array.from({length:30}).map((_,i)=>{ const d=new Date(); d.setDate(d.getDate()-(29)+i); d.setHours(0,0,0,0); return {date:d,key:d.getTime(),total:0,label:d.toLocaleDateString(undefined,{month:"short",day:"numeric"})}; });
-  if (chartFilter==="6m")  chartData = Array.from({length:6}).map((_,i)=>{ const d=new Date(); d.setMonth(d.getMonth()-(5)+i); d.setDate(1); d.setHours(0,0,0,0); return {date:d,key:d.getTime(),total:0,label:d.toLocaleDateString(undefined,{month:"short"})}; });
+  const chartData = useMemo(() => {
+    let data = [];
+    if (chartFilter==="7d")  data = Array.from({length:7}).map((_,i)=>{ const d=new Date(); d.setDate(d.getDate()-(6)+i); d.setHours(0,0,0,0); return {date:d,key:d.getTime(),total:0,label:d.toLocaleDateString(undefined,{weekday:"short"})}; });
+    if (chartFilter==="30d") data = Array.from({length:30}).map((_,i)=>{ const d=new Date(); d.setDate(d.getDate()-(29)+i); d.setHours(0,0,0,0); return {date:d,key:d.getTime(),total:0,label:d.toLocaleDateString(undefined,{month:"short",day:"numeric"})}; });
+    if (chartFilter==="6m")  data = Array.from({length:6}).map((_,i)=>{ const d=new Date(); d.setMonth(d.getMonth()-(5)+i); d.setDate(1); d.setHours(0,0,0,0); return {date:d,key:d.getTime(),total:0,label:d.toLocaleDateString(undefined,{month:"short"})}; });
 
-  invoices.forEach(inv => {
-    if (!inv.timestamp?.toDate) return;
-    const id = inv.timestamp.toDate();
-    if (chartFilter==="7d"||chartFilter==="30d") { const d=new Date(id); d.setHours(0,0,0,0); const m=chartData.find(c=>c.key===d.getTime()); if(m) m.total+=Number(inv.finalAmount??inv.total??inv.grandTotal??0); }
-    else if (chartFilter==="6m") { const m=chartData.find(c=>c.date.getMonth()===id.getMonth()&&c.date.getFullYear()===id.getFullYear()); if(m) m.total+=Number(inv.finalAmount??inv.total??inv.grandTotal??0); }
-  });
+    invoices.forEach(inv => {
+      if (!inv.timestamp?.toDate) return;
+      const id = inv.timestamp.toDate();
+      if (chartFilter==="7d"||chartFilter==="30d") { const d=new Date(id); d.setHours(0,0,0,0); const m=data.find(c=>c.key===d.getTime()); if(m) m.total+=Number(inv.finalAmount??inv.total??inv.grandTotal??0); }
+      else if (chartFilter==="6m") { const m=data.find(c=>c.date.getMonth()===id.getMonth()&&c.date.getFullYear()===id.getFullYear()); if(m) m.total+=Number(inv.finalAmount??inv.total??inv.grandTotal??0); }
+    });
+    return data;
+  }, [invoices, chartFilter]);
 
   const statusPills = [
     { val:"paid",    label:"Paid",    sel:"bg-emerald-600 border-emerald-600 text-white", unsel:"bg-white border-slate-200 text-slate-600 hover:border-emerald-300 hover:text-emerald-700" },
@@ -248,7 +256,7 @@ export default function InvoiceHistory() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-50">
-                  {invoices.map(inv => (
+                  {invoices.slice(0, 50).map(inv => (
                     <tr key={inv.id} className="hover:bg-slate-50/70 transition-colors group">
                       <td className="px-5 sm:px-6 py-3.5">
                         <p className="font-semibold text-slate-900 text-sm leading-tight">{inv.customerName}</p>
@@ -273,11 +281,14 @@ export default function InvoiceHistory() {
                   ))}
                 </tbody>
               </table>
+              {invoices.length > 50 && (
+                <p className="text-center text-xs text-slate-400 p-4">Showing 50 most recent invoices. Use "Export CSV" for the full history.</p>
+              )}
             </div>
 
             {/* Mobile card list */}
             <div className="md:hidden divide-y divide-slate-100">
-              {invoices.map(inv => (
+              {invoices.slice(0, 30).map(inv => (
                 <div key={inv.id} className="px-4 py-4">
                   <div className="flex justify-between items-start mb-2">
                     <div className="min-w-0 flex-1 pr-3">
@@ -299,6 +310,12 @@ export default function InvoiceHistory() {
                   <p className="text-slate-400 text-[11px] mt-2">{fmt(inv.timestamp)}</p>
                 </div>
               ))}
+              {invoices.length > 30 && (
+                <div className="px-4 py-4 text-center">
+                  <p className="text-xs text-slate-400">Showing 30 most recent invoices.</p>
+                  <button onClick={() => setShowExportModal(true)} className="text-indigo-600 text-xs font-semibold mt-1">Export CSV for full history</button>
+                </div>
+              )}
             </div>
           </>
         )}
