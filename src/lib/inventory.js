@@ -13,6 +13,8 @@ export async function addProduct(userId, productData) {
   const docRef = await addDoc(productsRef, {
     name: productData.name,
     price: Number(productData.price) || 0,
+    mrp: Number(productData.mrp) || 0,
+    discountPercent: Number(productData.discountPercent) || 0,
     hsnCode: productData.hsnCode || "",
     gstRate: Number(productData.gstRate) || 0,
     purchasePrice: Number(productData.purchasePrice) || 0,
@@ -29,6 +31,8 @@ export async function updateProduct(userId, productId, productData) {
   await updateDoc(productRef, {
     name: productData.name,
     price: Number(productData.price) || 0,
+    mrp: Number(productData.mrp) || 0,
+    discountPercent: Number(productData.discountPercent) || 0,
     hsnCode: productData.hsnCode || "",
     gstRate: Number(productData.gstRate) || 0,
     purchasePrice: Number(productData.purchasePrice) || 0,

@@ -74,6 +74,7 @@ export default function PublicInvoicePage() {
   const discountAmount = Number(invoice.discountAmount || 0);
   const finalAmount = invoice.finalAmount !== undefined ? Number(invoice.finalAmount) : Number(invoice.grandTotal || invoice.total || 0);
   const paymentMode = invoice.paymentMode || "Unknown";
+  const hasItemDiscount = (invoice.products || []).some(p => p.mrp && p.discountPercent && Number(p.discountPercent) > 0);
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-10 print:bg-white print:p-0 print:m-0 print:block">
@@ -112,7 +113,9 @@ export default function PublicInvoicePage() {
                 <th className="pb-2">Item</th>
                 {hasGstin && <th className="pb-2">HSN</th>}
                 <th className="pb-2 text-center">Qty</th>
-                <th className="pb-2 text-right">Price</th>
+                {hasItemDiscount && <th className="pb-2 text-right hidden sm:table-cell">MRP</th>}
+                {hasItemDiscount && <th className="pb-2 text-right hidden sm:table-cell">Disc %</th>}
+                <th className="pb-2 text-right">Rate</th>
                 {hasGstin && <th className="pb-2 text-right">GST %</th>}
                 {hasGstin && <th className="pb-2 text-right">GST Amt</th>}
                 <th className="pb-2 text-right">Total Amount</th>
@@ -126,10 +129,23 @@ export default function PublicInvoicePage() {
                 const lineSubtotal = qty * price;
                 return (
                   <tr key={i} className="border-b border-gray-50">
-                    <td className="py-3 text-gray-900">{p.name || 'Unknown Item'}</td>
+                    <td className="py-3 text-gray-900">
+                      <div>{p.name || 'Unknown Item'}</div>
+                      {p.mrp && p.discountPercent && (
+                        <div className="sm:hidden text-[11px] text-gray-500 mt-1">
+                          MRP: <span className="line-through">₹{Number(p.mrp).toFixed(2)}</span> <span className="text-emerald-600 font-medium ml-1">-{p.discountPercent}%</span>
+                        </div>
+                      )}
+                    </td>
                     {hasGstin && <td className="py-3 text-gray-600">{p.hsnCode || '-'}</td>}
                     <td className="py-3 text-center text-gray-600">{qty}</td>
-                    <td className="py-3 text-right text-gray-600">₹{price.toFixed(2)}</td>
+                    {hasItemDiscount && (
+                      <>
+                        <td className="py-3 text-right text-gray-400 text-xs hidden sm:table-cell">{p.mrp ? <span className="line-through">₹{Number(p.mrp).toFixed(2)}</span> : "-"}</td>
+                        <td className="py-3 text-right text-emerald-600 font-medium text-xs hidden sm:table-cell">{p.discountPercent ? `-${p.discountPercent}%` : "-"}</td>
+                      </>
+                    )}
+                    <td className="py-3 text-right text-gray-900 font-medium">₹{price.toFixed(2)}</td>
                     {hasGstin && <td className="py-3 text-right text-gray-600">{p.gstRate || 0}%</td>}
                     {hasGstin && <td className="py-3 text-right text-gray-600">₹{(p.totalGst || 0).toFixed(2)}</td>}
                     <td className="py-3 text-right text-gray-900 font-medium">
@@ -169,10 +185,12 @@ export default function PublicInvoicePage() {
                   <span>Grand Total</span>
                   <span>₹{(invoice.grandTotal || 0).toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-sm text-gray-600">
-                  <span>Discount</span>
-                  <span>₹{discountAmount.toFixed(2)}</span>
-                </div>
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>Discount</span>
+                    <span className="text-emerald-600">-₹{discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t border-gray-200 mt-2">
                   <span>Final Amount</span>
                   <span>₹{finalAmount.toFixed(2)}</span>
@@ -190,10 +208,12 @@ export default function PublicInvoicePage() {
                   <span>Grand Total</span>
                   <span>₹{(invoice.total || 0).toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-sm text-gray-600">
-                  <span>Discount</span>
-                  <span>₹{discountAmount.toFixed(2)}</span>
-                </div>
+                {discountAmount > 0 && (
+                  <div className="flex justify-between text-sm text-gray-600">
+                    <span>Discount</span>
+                    <span className="text-emerald-600">-₹{discountAmount.toFixed(2)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t border-gray-200 mt-2">
                   <span>Final Amount</span>
                   <span>₹{finalAmount.toFixed(2)}</span>

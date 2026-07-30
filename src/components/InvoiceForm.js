@@ -11,7 +11,7 @@ import { calculateGstBreakdown } from "@/lib/gst";
 import { INDIAN_STATES } from "@/lib/constants";
 import { validatePaymentMode } from "@/lib/paymentHelpers";
 
-const emptyProduct = () => ({ name: "", qty: 1, price: "", productId: "", hsnCode: "", gstRate: "18" });
+const emptyProduct = () => ({ name: "", qty: 1, mrp: "", discountPercent: "", price: "", productId: "", hsnCode: "", gstRate: "18" });
 
 // ─── Field wrapper ────────────────────────────────────────────────────────────
 function Field({ label, required, hint, children }) {
@@ -120,10 +120,15 @@ export default function InvoiceForm({ shopName }) {
   const updateProduct = (i, field, val) => setProducts(prev => prev.map((p, idx) => {
     if (idx !== i) return p;
     const u = { ...p, [field]: val };
+    if (field === "mrp" || field === "discountPercent") {
+      const m = field === "mrp" ? val : p.mrp;
+      const d = field === "discountPercent" ? val : p.discountPercent;
+      if (m && d) u.price = Math.max(0, Number(m) - (Number(m) * Number(d) / 100)).toFixed(2);
+    }
     if (field === "name") {
       const m = inventoryProducts.find(ip => ip.name.toLowerCase() === val.toLowerCase());
-      if (m) { if (!p.price || p.price === "" || p.price === "0" || p.price === 0) u.price = m.price; u.productId = m.id; u.hsnCode = m.hsnCode || ""; u.gstRate = m.gstRate || "0"; }
-      else u.productId = "";
+      if (m) { if (!p.price || p.price === "" || p.price === "0" || p.price === 0) u.price = m.price; u.productId = m.id; u.hsnCode = m.hsnCode || ""; u.gstRate = m.gstRate || "0"; u.mrp = m.mrp || ""; u.discountPercent = m.discountPercent || ""; }
+      else { u.productId = ""; u.mrp = ""; u.discountPercent = ""; }
     }
     return u;
   }));
@@ -132,7 +137,7 @@ export default function InvoiceForm({ shopName }) {
     const ei = products.findIndex(p => p.name.trim().toLowerCase() === ip.name.trim().toLowerCase());
     if (ei !== -1) { setProducts(prev => prev.map((p, i) => i === ei ? { ...p, qty: Number(p.qty) + 1 } : p)); return; }
     const empty = products.findIndex(p => p.name.trim() === "" && (!p.price || p.price === "" || p.price === "0" || p.price === 0));
-    const np = { name: ip.name, qty: 1, price: ip.price, productId: ip.id, hsnCode: ip.hsnCode || "", gstRate: ip.gstRate || "0" };
+    const np = { name: ip.name, qty: 1, mrp: ip.mrp || "", discountPercent: ip.discountPercent || "", price: ip.price, productId: ip.id, hsnCode: ip.hsnCode || "", gstRate: ip.gstRate || "0" };
     if (empty !== -1) setProducts(prev => prev.map((p, i) => i === empty ? np : p)); else setProducts(prev => [...prev, np]);
   };
 
@@ -155,7 +160,7 @@ export default function InvoiceForm({ shopName }) {
     }
     setSubmitting(true);
     try {
-      const clean = calculatedProducts.map(p => ({ name: p.name, qty: Number(p.qty)||0, price: Number(p.price)||0, productId: p.productId||"", hsnCode: p.hsnCode||"", gstRate: Number(p.gstRate)||0, lineSubtotal: p.lineSubtotal, cgst: p.cgst, sgst: p.sgst, igst: p.igst, totalGst: p.totalGst }));
+      const clean = calculatedProducts.map(p => ({ name: p.name, qty: Number(p.qty)||0, mrp: p.mrp||"", discountPercent: p.discountPercent||"", price: Number(p.price)||0, productId: p.productId||"", hsnCode: p.hsnCode||"", gstRate: Number(p.gstRate)||0, lineSubtotal: p.lineSubtotal, cgst: p.cgst, sgst: p.sgst, igst: p.igst, totalGst: p.totalGst }));
       if (clean.some(p => p.qty <= 0 || p.price < 0)) { alert("Quantity must be > 0 and price cannot be negative."); setSubmitting(false); return; }
       const numDiscount = Number(discountAmount) || 0;
       if (numDiscount > grandTotal) { alert("Discount cannot exceed Grand Total."); setSubmitting(false); return; }
@@ -277,7 +282,7 @@ export default function InvoiceForm({ shopName }) {
                       className="w-full h-10 bg-white border border-slate-200 text-slate-900 placeholder-slate-400 rounded-lg px-3 text-sm font-medium focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/15 hover:border-slate-300 transition-all" />
                   </div>
                   {hasGstin && (
-                    <div>
+                    <div className="col-span-2 sm:col-span-1">
                       <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">GST %</label>
                       <div className="relative">
                         <select value={p.gstRate} onChange={e => updateProduct(i, "gstRate", e.target.value)}
@@ -293,7 +298,15 @@ export default function InvoiceForm({ shopName }) {
                 </div>
 
                 <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-200">
-                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Line Total</span>
+                  <div className="flex flex-col">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">Line Total</span>
+                    {p.mrp && p.discountPercent && (
+                      <span className="text-[10px] font-medium text-emerald-600 mt-0.5">
+                        <span className="text-slate-400 line-through mr-1">₹{p.mrp}</span>
+                        -{p.discountPercent}% OFF
+                      </span>
+                    )}
+                  </div>
                   <span className="text-sm font-bold text-slate-900">₹{((Number(p.qty)||0)*(Number(p.price)||0)).toFixed(2)}</span>
                 </div>
               </div>

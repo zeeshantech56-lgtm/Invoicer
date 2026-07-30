@@ -69,6 +69,8 @@ function InventoryContent() {
   const [products, setProducts]           = useState([]);
   const [loading, setLoading]             = useState(true);
   const [newProductName, setNewProductName]           = useState("");
+  const [newProductMrp, setNewProductMrp]             = useState("");
+  const [newProductDiscount, setNewProductDiscount]   = useState("");
   const [newProductPrice, setNewProductPrice]         = useState("");
   const [newProductHsn, setNewProductHsn]             = useState("");
   const [newProductGst, setNewProductGst]             = useState("18");
@@ -78,7 +80,7 @@ function InventoryContent() {
   const [newProductUnit, setNewProductUnit]           = useState("pcs");
   const [isSubmitting, setIsSubmitting]   = useState(false);
   const [editingProductId, setEditingProductId] = useState(null);
-  const [editForm, setEditForm]           = useState({ name:"", price:"", hsnCode:"", gstRate:"18", purchasePrice:"", stockQty:"", lowStockThreshold:"10", unit:"pcs" });
+  const [editForm, setEditForm]           = useState({ name:"", price:"", mrp:"", discountPercent:"", hsnCode:"", gstRate:"18", purchasePrice:"", stockQty:"", lowStockThreshold:"10", unit:"pcs" });
   const [isUpdating, setIsUpdating]       = useState(false);
 
   useEffect(() => {
@@ -91,9 +93,9 @@ function InventoryContent() {
     if (!newProductName.trim() || !user) return;
     setIsSubmitting(true);
     try {
-      const added = await addProduct(user.uid, { name: newProductName, price: newProductPrice, hsnCode: newProductHsn, gstRate: newProductGst, purchasePrice: newProductPurchasePrice, stockQty: newProductStock, lowStockThreshold: newProductLowStock, unit: newProductUnit });
+      const added = await addProduct(user.uid, { name: newProductName, price: newProductPrice, mrp: newProductMrp, discountPercent: newProductDiscount, hsnCode: newProductHsn, gstRate: newProductGst, purchasePrice: newProductPurchasePrice, stockQty: newProductStock, lowStockThreshold: newProductLowStock, unit: newProductUnit });
       setProducts([...products, added]);
-      setNewProductName(""); setNewProductPrice(""); setNewProductHsn(""); setNewProductGst("18"); setNewProductPurchasePrice(""); setNewProductStock(""); setNewProductLowStock("10"); setNewProductUnit("pcs");
+      setNewProductName(""); setNewProductPrice(""); setNewProductMrp(""); setNewProductDiscount(""); setNewProductHsn(""); setNewProductGst("18"); setNewProductPurchasePrice(""); setNewProductStock(""); setNewProductLowStock("10"); setNewProductUnit("pcs");
     } catch (err) { alert("Error adding product: " + err.message); }
     finally { setIsSubmitting(false); }
   };
@@ -104,7 +106,7 @@ function InventoryContent() {
     catch (err) { alert("Error: " + err.message); }
   };
 
-  const handleEditClick = p => { setEditingProductId(p.id); setEditForm({ name: p.name||"", price: p.price||"", hsnCode: p.hsnCode||"", gstRate: p.gstRate||"18", purchasePrice: p.purchasePrice||"", stockQty: p.stockQty||"", lowStockThreshold: p.lowStockThreshold||"10", unit: p.unit||"pcs" }); };
+  const handleEditClick = p => { setEditingProductId(p.id); setEditForm({ name: p.name||"", price: p.price||"", mrp: p.mrp||"", discountPercent: p.discountPercent||"", hsnCode: p.hsnCode||"", gstRate: p.gstRate||"18", purchasePrice: p.purchasePrice||"", stockQty: p.stockQty||"", lowStockThreshold: p.lowStockThreshold||"10", unit: p.unit||"pcs" }); };
 
   const handleUpdateProductSubmit = async e => {
     e.preventDefault();
@@ -158,10 +160,25 @@ function InventoryContent() {
                 </Field>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <Field label="MRP (₹)" hint="(Optional)">
+                  <input type="number" min="0" step="0.01" value={newProductMrp} onChange={e => {
+                    const m = e.target.value; setNewProductMrp(m);
+                    if (m && newProductDiscount) setNewProductPrice(Math.max(0, Number(m) - (Number(m) * Number(newProductDiscount) / 100)).toFixed(2));
+                  }} placeholder="0.00" className={inputCls} />
+                </Field>
+                <Field label="Discount %" hint="(Optional)">
+                  <input type="number" min="0" max="100" step="0.01" value={newProductDiscount} onChange={e => {
+                    const d = e.target.value; setNewProductDiscount(d);
+                    if (newProductMrp && d) setNewProductPrice(Math.max(0, Number(newProductMrp) - (Number(newProductMrp) * Number(d) / 100)).toFixed(2));
+                  }} placeholder="0" className={inputCls} />
+                </Field>
                 <Field label="Selling Price (₹)">
                   <input type="number" min="0" step="0.01" required value={newProductPrice} onChange={e => setNewProductPrice(e.target.value)} placeholder="0.00" className={inputCls} />
                 </Field>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label="Purchase Price (₹)" hint="(Optional)">
                   <input type="number" min="0" step="0.01" value={newProductPurchasePrice} onChange={e => setNewProductPurchasePrice(e.target.value)} placeholder="0.00" className={inputCls} />
                 </Field>
@@ -210,7 +227,7 @@ function InventoryContent() {
                   <table className="w-full text-sm">
                     <thead className="bg-slate-50 border-b border-slate-100">
                       <tr>
-                        {["Product","HSN","GST","Sell Price","Stock","Actions"].map(h => (
+                        {["Product","HSN","GST","MRP","Discount","Sell Price","Stock","Actions"].map(h => (
                           <th key={h} className="text-left px-5 py-3 text-[11px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">{h}</th>
                         ))}
                       </tr>
@@ -223,15 +240,25 @@ function InventoryContent() {
                         if (editingProductId === p.id) {
                           return (
                             <tr key={p.id} className="bg-indigo-50/50 border-b border-indigo-100">
-                              <td colSpan={6} className="px-5 py-4">
+                              <td colSpan={8} className="px-5 py-4">
                                 <form onSubmit={handleUpdateProductSubmit} className="flex flex-wrap gap-2 items-center">
-                                  <input type="text" required value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} placeholder="Name" className="h-9 bg-white border border-slate-200 rounded-lg px-3 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 w-32 min-w-0" />
-                                  <input type="text" value={editForm.hsnCode} onChange={e => setEditForm({...editForm, hsnCode: e.target.value})} placeholder="HSN" className="h-9 bg-white border border-slate-200 rounded-lg px-3 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 w-20 min-w-0" />
-                                  <select value={editForm.gstRate} onChange={e => setEditForm({...editForm, gstRate: e.target.value})} className="h-9 bg-white border border-slate-200 rounded-lg px-2 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 w-18 min-w-0">
+                                  <input type="text" required value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} placeholder="Name" className="h-9 bg-white border border-slate-200 rounded-lg px-3 text-sm text-slate-900 focus:outline-none focus:border-indigo-50 w-32 min-w-0" />
+                                  <input type="text" value={editForm.hsnCode} onChange={e => setEditForm({...editForm, hsnCode: e.target.value})} placeholder="HSN" className="h-9 bg-white border border-slate-200 rounded-lg px-3 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 w-16 min-w-0" />
+                                  <select value={editForm.gstRate} onChange={e => setEditForm({...editForm, gstRate: e.target.value})} className="h-9 bg-white border border-slate-200 rounded-lg px-2 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 w-16 min-w-0">
                                     {["0","5","12","18","28"].map(v => <option key={v} value={v}>{v}%</option>)}
                                   </select>
-                                  <input type="number" min="0" step="0.01" required value={editForm.price} onChange={e => setEditForm({...editForm, price: e.target.value})} placeholder="Price" className="h-9 bg-white border border-slate-200 rounded-lg px-3 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 w-24 min-w-0" />
-                                  <input type="number" min="0" value={editForm.stockQty} onChange={e => setEditForm({...editForm, stockQty: e.target.value})} placeholder="Stock" className="h-9 bg-white border border-slate-200 rounded-lg px-3 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 w-20 min-w-0" />
+                                  <input type="number" min="0" step="0.01" value={editForm.mrp} onChange={e => {
+                                    const m = e.target.value; const d = editForm.discountPercent;
+                                    const p = (m && d) ? Math.max(0, Number(m) - (Number(m)*Number(d)/100)).toFixed(2) : editForm.price;
+                                    setEditForm({...editForm, mrp: m, price: p});
+                                  }} placeholder="MRP" className="h-9 bg-white border border-slate-200 rounded-lg px-3 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 w-20 min-w-0" />
+                                  <input type="number" min="0" step="0.01" value={editForm.discountPercent} onChange={e => {
+                                    const d = e.target.value; const m = editForm.mrp;
+                                    const p = (m && d) ? Math.max(0, Number(m) - (Number(m)*Number(d)/100)).toFixed(2) : editForm.price;
+                                    setEditForm({...editForm, discountPercent: d, price: p});
+                                  }} placeholder="Disc %" className="h-9 bg-white border border-slate-200 rounded-lg px-3 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 w-20 min-w-0" />
+                                  <input type="number" min="0" step="0.01" required value={editForm.price} onChange={e => setEditForm({...editForm, price: e.target.value})} placeholder="Sell Price" className="h-9 bg-white border border-slate-200 rounded-lg px-3 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 w-24 min-w-0" />
+                                  <input type="number" min="0" value={editForm.stockQty} onChange={e => setEditForm({...editForm, stockQty: e.target.value})} placeholder="Stock" className="h-9 bg-white border border-slate-200 rounded-lg px-3 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 w-16 min-w-0" />
                                   <div className="flex gap-2 ml-auto">
                                     <button type="submit" disabled={isUpdating} className="h-9 px-4 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition">{isUpdating ? "Saving…" : "Save"}</button>
                                     <button type="button" onClick={() => setEditingProductId(null)} className="h-9 px-4 bg-slate-100 text-slate-700 text-xs font-bold rounded-lg hover:bg-slate-200 transition">Cancel</button>
@@ -250,6 +277,8 @@ function InventoryContent() {
                             </td>
                             <td className="px-5 py-3.5 text-slate-500 text-xs">{p.hsnCode || "—"}</td>
                             <td className="px-5 py-3.5 text-slate-500 text-xs">{p.gstRate}%</td>
+                            <td className="px-5 py-3.5 text-slate-500 text-xs">{p.mrp ? `₹${Number(p.mrp).toFixed(2)}` : "—"}</td>
+                            <td className="px-5 py-3.5 text-emerald-600 font-medium text-xs">{p.discountPercent ? `${p.discountPercent}%` : "—"}</td>
                             <td className="px-5 py-3.5 font-bold text-slate-900">₹{Number(p.price).toFixed(2)}</td>
                             <td className={`px-5 py-3.5 font-bold text-sm ${isLow ? "text-rose-600" : "text-slate-900"}`}>
                               {stockQty} <span className="text-slate-400 text-xs font-normal">{p.unit}</span>
@@ -282,7 +311,19 @@ function InventoryContent() {
                               </select>
                             </div>
                             <div className="flex gap-2">
-                              <input type="number" min="0" step="0.01" required value={editForm.price} onChange={e => setEditForm({...editForm, price: e.target.value})} placeholder="Price" className="h-10 bg-white border border-slate-200 rounded-lg px-3 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 w-1/2" />
+                              <input type="number" min="0" step="0.01" value={editForm.mrp} onChange={e => {
+                                const m = e.target.value; const d = editForm.discountPercent;
+                                const p = (m && d) ? Math.max(0, Number(m) - (Number(m)*Number(d)/100)).toFixed(2) : editForm.price;
+                                setEditForm({...editForm, mrp: m, price: p});
+                              }} placeholder="MRP (₹)" className="h-10 bg-white border border-slate-200 rounded-lg px-3 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 w-1/2" />
+                              <input type="number" min="0" step="0.01" value={editForm.discountPercent} onChange={e => {
+                                const d = e.target.value; const m = editForm.mrp;
+                                const p = (m && d) ? Math.max(0, Number(m) - (Number(m)*Number(d)/100)).toFixed(2) : editForm.price;
+                                setEditForm({...editForm, discountPercent: d, price: p});
+                              }} placeholder="Discount %" className="h-10 bg-white border border-slate-200 rounded-lg px-3 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 w-1/2" />
+                            </div>
+                            <div className="flex gap-2">
+                              <input type="number" min="0" step="0.01" required value={editForm.price} onChange={e => setEditForm({...editForm, price: e.target.value})} placeholder="Selling Price" className="h-10 bg-white border border-slate-200 rounded-lg px-3 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 w-1/2" />
                               <input type="number" min="0" value={editForm.stockQty} onChange={e => setEditForm({...editForm, stockQty: e.target.value})} placeholder="Stock" className="h-10 bg-white border border-slate-200 rounded-lg px-3 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 w-1/2" />
                             </div>
                             <div className="flex gap-2 pt-2">
@@ -304,7 +345,12 @@ function InventoryContent() {
                             {isLow && <span className="ml-2 bg-rose-100 text-rose-700 text-[10px] font-bold px-2 py-0.5 rounded-lg">Low Stock</span>}
                             <p className="text-xs text-slate-500 mt-0.5">HSN: {p.hsnCode || "—"} · GST: {p.gstRate}%</p>
                           </div>
-                          <span className="font-extrabold text-slate-900">₹{Number(p.price).toFixed(2)}</span>
+                          <div className="text-right">
+                            <span className="font-extrabold text-slate-900">₹{Number(p.price).toFixed(2)}</span>
+                            {p.mrp && p.discountPercent && (
+                              <p className="text-[10px] text-slate-400 mt-0.5"><span className="line-through">₹{Number(p.mrp).toFixed(2)}</span> <span className="text-emerald-600 font-bold ml-1">-{p.discountPercent}%</span></p>
+                            )}
+                          </div>
                         </div>
                         <div className="flex items-center justify-between pt-2">
                           <span className={`text-sm font-bold ${isLow ? "text-rose-600" : "text-slate-700"}`}>{stockQty} {p.unit}</span>
