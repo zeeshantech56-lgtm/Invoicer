@@ -270,6 +270,30 @@ function InventoryContent() {
                 {/* Mobile card list */}
                 <div className="md:hidden divide-y divide-slate-100">
                   {products.map(p => {
+                    if (editingProductId === p.id) {
+                      return (
+                        <div key={p.id} className="px-4 py-4 bg-indigo-50/50">
+                          <form onSubmit={handleUpdateProductSubmit} className="flex flex-col gap-3">
+                            <input type="text" required value={editForm.name} onChange={e => setEditForm({...editForm, name: e.target.value})} placeholder="Product Name" className="h-10 bg-white border border-slate-200 rounded-lg px-3 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 w-full" />
+                            <div className="flex gap-2">
+                              <input type="text" value={editForm.hsnCode} onChange={e => setEditForm({...editForm, hsnCode: e.target.value})} placeholder="HSN" className="h-10 bg-white border border-slate-200 rounded-lg px-3 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 w-1/2" />
+                              <select value={editForm.gstRate} onChange={e => setEditForm({...editForm, gstRate: e.target.value})} className="h-10 bg-white border border-slate-200 rounded-lg px-2 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 w-1/2">
+                                {["0","5","12","18","28"].map(v => <option key={v} value={v}>{v}% GST</option>)}
+                              </select>
+                            </div>
+                            <div className="flex gap-2">
+                              <input type="number" min="0" step="0.01" required value={editForm.price} onChange={e => setEditForm({...editForm, price: e.target.value})} placeholder="Price" className="h-10 bg-white border border-slate-200 rounded-lg px-3 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 w-1/2" />
+                              <input type="number" min="0" value={editForm.stockQty} onChange={e => setEditForm({...editForm, stockQty: e.target.value})} placeholder="Stock" className="h-10 bg-white border border-slate-200 rounded-lg px-3 text-sm text-slate-900 focus:outline-none focus:border-indigo-500 w-1/2" />
+                            </div>
+                            <div className="flex gap-2 pt-2">
+                              <button type="submit" disabled={isUpdating} className="h-10 flex-1 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition">{isUpdating ? "Saving…" : "Save Changes"}</button>
+                              <button type="button" onClick={() => setEditingProductId(null)} className="h-10 flex-1 bg-slate-200 text-slate-700 text-sm font-bold rounded-lg hover:bg-slate-300 transition">Cancel</button>
+                            </div>
+                          </form>
+                        </div>
+                      );
+                    }
+
                     const stockQty = Number(p.stockQty) || 0;
                     const isLow = stockQty <= (Number(p.lowStockThreshold) || 10);
                     return (
@@ -282,11 +306,11 @@ function InventoryContent() {
                           </div>
                           <span className="font-extrabold text-slate-900">₹{Number(p.price).toFixed(2)}</span>
                         </div>
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between pt-2">
                           <span className={`text-sm font-bold ${isLow ? "text-rose-600" : "text-slate-700"}`}>{stockQty} {p.unit}</span>
-                          <div className="flex gap-3">
-                            <button onClick={() => handleEditClick(p)} className="text-indigo-600 text-xs font-bold">Edit</button>
-                            <button onClick={() => handleDeleteProduct(p.id)} className="text-rose-500 text-xs font-bold">Delete</button>
+                          <div className="flex gap-2">
+                            <button type="button" onClick={() => handleEditClick(p)} className="px-4 py-2 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-bold active:bg-indigo-100 transition">Edit</button>
+                            <button type="button" onClick={() => handleDeleteProduct(p.id)} className="px-4 py-2 bg-rose-50 text-rose-700 rounded-lg text-xs font-bold active:bg-rose-100 transition">Delete</button>
                           </div>
                         </div>
                       </div>
