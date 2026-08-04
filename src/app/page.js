@@ -71,11 +71,6 @@ export default function LandingPage() {
         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-violet-100 rounded-full blur-3xl opacity-40 pointer-events-none translate-y-1/3 -translate-x-1/3" />
 
         <div className="relative max-w-4xl mx-auto text-center">
-          {/* Badge */}
-          <div className="inline-flex items-center gap-2 bg-indigo-100 border border-indigo-200 text-indigo-700 text-sm font-bold px-5 py-2.5 rounded-full mb-8">
-            <span className="w-2.5 h-2.5 bg-indigo-500 rounded-full animate-pulse shrink-0" />
-            Trusted by 500+ shop owners across India
-          </div>
 
           {/* Headline */}
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.1] mb-6">
@@ -115,9 +110,8 @@ export default function LandingPage() {
 
       {/* ══ STATS BAR ══════════════════════════════════════════════════ */}
       <section className="bg-white border-y border-slate-200">
-        <div className="max-w-5xl mx-auto px-5 sm:px-8 py-10 grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8 text-center">
+        <div className="max-w-5xl mx-auto px-5 sm:px-8 py-10 grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-8 text-center">
           {[
-            { val: "500+", label: "Active Shops" },
             { val: "∞", label: "Invoices Created" },
             { val: "₹150", label: "Per Month Only" },
             { val: "3 Days", label: "Free Trial" },
