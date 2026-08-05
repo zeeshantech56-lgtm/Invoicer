@@ -23,17 +23,29 @@ export function AuthProvider({ children }) {
     const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
-        // Read admin status (using a dedicated admins collection to avoid path segment issues)
-        const adminSnap = await getDoc(doc(db, "admins", currentUser.uid));
-        setIsAdmin(adminSnap.exists());
+        // Read admin status (wrapped in try-catch in case Firestore rules deny access)
+        try {
+          const adminSnap = await getDoc(doc(db, "admins", currentUser.uid));
+          setIsAdmin(adminSnap.exists());
+        } catch (err) {
+          console.warn("Could not read admin status, defaulting to false:", err);
+          setIsAdmin(false);
+        }
 
-        unsubscribeDoc = onSnapshot(doc(db, "users", currentUser.uid), (snap) => {
-          if (snap.exists()) {
-            setUserData(snap.data());
-            setIsBanned(snap.data().banned === true);
+        unsubscribeDoc = onSnapshot(
+          doc(db, "users", currentUser.uid), 
+          (snap) => {
+            if (snap.exists()) {
+              setUserData(snap.data());
+              setIsBanned(snap.data().banned === true);
+            }
+            setLoading(false);
+          },
+          (err) => {
+            console.warn("Could not read user profile:", err);
+            setLoading(false);
           }
-          setLoading(false);
-        });
+        );
       } else {
         setIsAdmin(false);
         setIsBanned(false);
