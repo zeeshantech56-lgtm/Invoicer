@@ -132,9 +132,9 @@ export function subscribeToShopInvoices(shopId, callback, onError) {
   });
 }
 
-// Admin-only: subscribes to recent 100 invoices across every shop.
-export function subscribeToAllInvoices(callback) {
-  const q = query(collection(db, "invoices"), orderBy("timestamp", "desc"), limit(100));
+// Admin-only: subscribes to recent invoices across every shop.
+export function subscribeToAllInvoices(limitCount = 100, callback) {
+  const q = query(collection(db, "invoices"), orderBy("timestamp", "desc"), limit(limitCount));
   return onSnapshot(q, (snapshot) => {
     callback(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
   });

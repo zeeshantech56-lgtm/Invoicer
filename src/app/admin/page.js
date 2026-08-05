@@ -32,6 +32,7 @@ function AdminContent() {
   const [selectedShopId, setSelectedShopId] = useState(null);
   const [timeFilter, setTimeFilter] = useState("14d");
   const [showExportModal, setShowExportModal] = useState(false);
+  const [invoiceLimit, setInvoiceLimit] = useState(100);
 
   useEffect(() => {
     const fetchShops = async () => {
@@ -46,12 +47,12 @@ function AdminContent() {
     };
     fetchAnnouncement();
 
-    const unsubscribe = subscribeToAllInvoices((data) => {
+    const unsubscribe = subscribeToAllInvoices(invoiceLimit, (data) => {
       setInvoices(data);
       setLoading(false);
     });
     return () => unsubscribe();
-  }, []);
+  }, [invoiceLimit]);
 
   const shopNameById = useMemo(() => {
     const map = {};
@@ -506,14 +507,14 @@ function AdminContent() {
                     <td className="py-3">
                       <div className="flex items-center gap-2">
                         <div className="flex items-center bg-gray-50 border border-gray-200 rounded overflow-hidden mr-2">
-                          <button onClick={() => handleAddPlan(shop, 1, "1 Month")} className="text-[10px] font-medium px-2 py-1 hover:bg-green-100 hover:text-green-800 border-r border-gray-200 text-gray-700 transition" title="Add 1 Month">1M</button>
-                          <button onClick={() => handleAddPlan(shop, 3, "3 Months")} className="text-[10px] font-medium px-2 py-1 hover:bg-green-100 hover:text-green-800 border-r border-gray-200 text-gray-700 transition" title="Add 3 Months">3M</button>
-                          <button onClick={() => handleAddPlan(shop, 6, "6 Months")} className="text-[10px] font-medium px-2 py-1 hover:bg-green-100 hover:text-green-800 border-r border-gray-200 text-gray-700 transition" title="Add 6 Months">6M</button>
-                          <button onClick={() => handleAddPlan(shop, 12, "1 Year")} className="text-[10px] font-medium px-2 py-1 hover:bg-green-100 hover:text-green-800 text-gray-700 transition" title="Add 1 Year">1Y</button>
+                          <button onClick={() => handleAddPlan(shop, 1, "1 Month")} className="text-xs font-medium min-w-[44px] min-h-[44px] px-3 py-2 hover:bg-green-100 hover:text-green-800 border-r border-gray-200 text-gray-700 transition" title="Add 1 Month">1M</button>
+                          <button onClick={() => handleAddPlan(shop, 3, "3 Months")} className="text-xs font-medium min-w-[44px] min-h-[44px] px-3 py-2 hover:bg-green-100 hover:text-green-800 border-r border-gray-200 text-gray-700 transition" title="Add 3 Months">3M</button>
+                          <button onClick={() => handleAddPlan(shop, 6, "6 Months")} className="text-xs font-medium min-w-[44px] min-h-[44px] px-3 py-2 hover:bg-green-100 hover:text-green-800 border-r border-gray-200 text-gray-700 transition" title="Add 6 Months">6M</button>
+                          <button onClick={() => handleAddPlan(shop, 12, "1 Year")} className="text-xs font-medium min-w-[44px] min-h-[44px] px-3 py-2 hover:bg-green-100 hover:text-green-800 text-gray-700 transition" title="Add 1 Year">1Y</button>
                         </div>
                         <button
                           onClick={() => handleBan(shop)}
-                          className={`text-xs border rounded px-2 py-1 whitespace-nowrap ${
+                          className={`text-xs font-medium border rounded min-w-[44px] min-h-[44px] px-3 py-2 whitespace-nowrap ${
                             shop.banned
                               ? "border-gray-300 text-gray-600 hover:bg-gray-50"
                               : "border-red-300 text-red-600 hover:bg-red-50"
@@ -523,7 +524,7 @@ function AdminContent() {
                         </button>
                         <button
                           onClick={() => setSelectedShopId(selectedShopId === shop.id ? null : shop.id)}
-                          className={`text-xs border rounded px-2 py-1 whitespace-nowrap ${
+                          className={`text-xs font-medium border rounded min-w-[44px] min-h-[44px] px-3 py-2 whitespace-nowrap ${
                             selectedShopId === shop.id 
                             ? "bg-blue-50 border-blue-300 text-blue-700" 
                             : "border-gray-300 text-gray-600 hover:bg-gray-50"
@@ -609,6 +610,14 @@ function AdminContent() {
                   ))}
                 </tbody>
               </table>
+              <div className="flex justify-center mt-6 mb-4">
+                <button
+                  onClick={() => setInvoiceLimit(l => l + 100)}
+                  className="px-4 py-2 bg-white border border-gray-300 text-sm font-medium rounded-lg text-gray-700 hover:bg-gray-50 transition"
+                >
+                  Load More (Showing latest {invoices.length})
+                </button>
+              </div>
             </div>
           )}
         </div>
