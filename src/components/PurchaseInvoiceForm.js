@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { getUserProducts } from "@/lib/inventory";
 import { createPurchaseInvoice } from "@/lib/purchases";
 import { calculateGstBreakdown } from "@/lib/gst";
+import { phoneSchema, gstinSchema, invoiceItemsSchema } from "@/lib/validations";
 
 const emptyProduct = () => ({ name: "", qty: 1, purchasePrice: "", productId: "", hsnCode: "", gstRate: "18" });
 
@@ -104,10 +105,21 @@ export default function PurchaseInvoiceForm({ shopProfile, onPurchaseSaved }) {
         totalGst: p.totalGst
       }));
 
-      if (cleanProducts.some(p => p.qty <= 0 || p.purchasePrice < 0)) {
-        alert("Quantity must be greater than zero and price cannot be negative.");
-        setSubmitting(false);
-        return;
+      const itemsForValidation = cleanProducts.map(p => ({
+         name: p.name,
+         qty: p.qty,
+         price: p.purchasePrice
+      }));
+      const itemsVal = invoiceItemsSchema.safeParse(itemsForValidation);
+      if (!itemsVal.success) { alert(itemsVal.error.errors[0].message); setSubmitting(false); return; }
+
+      if (supplierPhone) {
+        const phoneVal = phoneSchema.safeParse(supplierPhone);
+        if (!phoneVal.success) { alert(phoneVal.error.errors[0].message); setSubmitting(false); return; }
+      }
+      if (supplierGstin) {
+        const gstinVal = gstinSchema.safeParse(supplierGstin);
+        if (!gstinVal.success) { alert(gstinVal.error.errors[0].message); setSubmitting(false); return; }
       }
 
       await createPurchaseInvoice({

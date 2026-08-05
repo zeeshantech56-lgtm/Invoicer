@@ -60,12 +60,13 @@ export async function createPurchaseInvoice(purchaseData) {
           createdAt: serverTimestamp()
         });
         
-        // Optionally update the purchase line item to have the new productId? 
-        // We can't mutate the purchaseData object inside the transaction easily for the invoice 
         // since we already staged the write, but we can just let it have no ID in the purchase record.
       }
     }
     
+    // Write lastInvoiceAt for rate limiting stopgap
+    transaction.update(doc(db, "users", purchaseData.shopId), { lastInvoiceAt: serverTimestamp() });
+
     return { id: newInvoiceRef.id, total: purchaseData.grandTotal };
   });
 }

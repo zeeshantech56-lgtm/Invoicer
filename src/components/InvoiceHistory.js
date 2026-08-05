@@ -6,11 +6,10 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { subscribeToShopInvoices, RETENTION_DAYS, buildWhatsAppUrl } from "@/lib/invoices";
 import { db } from "@/lib/firebase";
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid,
-  Tooltip as RechartsTooltip, ResponsiveContainer,
-} from "recharts";
-import ExportModal from "./ExportModal";
+import dynamic from "next/dynamic";
+
+const ExportModal = dynamic(() => import("./ExportModal"), { ssr: false });
+const DashboardChart = dynamic(() => import("./DashboardChart"), { ssr: false, loading: () => <p className="text-xs text-slate-400 py-10 text-center">Loading chart...</p> });
 
 // ── Stat card ─────────────────────────────────────────────────────────────────
 function StatCard({ label, value, icon, borderColor, iconBg, valueColor = "text-slate-900" }) {
@@ -34,7 +33,7 @@ function PayBadge({ status, onClick }) {
   };
   const s = status || "unpaid";
   return (
-    <button onClick={onClick} className={`${map[s]} px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition whitespace-nowrap`}>
+    <button onClick={onClick} className={`${map[s]} min-h-[44px] min-w-[44px] px-3 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition whitespace-nowrap`}>
       {s}
     </button>
   );
@@ -51,15 +50,7 @@ function Section({ label }) {
 }
 
 // ── Custom tooltip ─────────────────────────────────────────────────────────────
-function ChartTooltip({ active, payload, label }) {
-  if (!active || !payload?.length) return null;
-  return (
-    <div className="bg-white border border-slate-200 rounded-xl px-3.5 py-2.5 shadow-xl text-sm">
-      <p className="text-slate-500 text-xs mb-1">{label}</p>
-      <p className="font-bold text-slate-900">₹{Number(payload[0]?.value || 0).toFixed(2)}</p>
-    </div>
-  );
-}
+// (Moved to DashboardChart.js)
 
 export default function InvoiceHistory() {
   const { user } = useAuth();
@@ -198,17 +189,7 @@ export default function InvoiceHistory() {
           </div>
         </div>
         <div style={{ height: 200 }}>
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="2 4" vertical={false} stroke="#F1F5F9" />
-              <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize:11, fill:"#94A3B8", fontWeight:500 }} dy={6}
-                interval={chartFilter==="30d" ? 4 : 0} angle={chartFilter==="30d" ? -35 : 0}
-                textAnchor={chartFilter==="30d" ? "end" : "middle"} height={chartFilter==="30d" ? 40 : 22} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fontSize:11, fill:"#94A3B8" }} tickFormatter={v => `₹${v}`} />
-              <RechartsTooltip content={<ChartTooltip />} cursor={{ fill:"#F8FAFF", rx:6 }} />
-              <Bar dataKey="total" fill="#6366F1" radius={[6,6,0,0]} barSize={chartFilter==="30d"?9:(chartFilter==="6m"?36:22)} />
-            </BarChart>
-          </ResponsiveContainer>
+          <DashboardChart data={chartData} filter={chartFilter} />
         </div>
       </div>
 
@@ -220,9 +201,9 @@ export default function InvoiceHistory() {
             <p className="text-xs text-slate-400 mt-0.5">Last {RETENTION_DAYS} days</p>
           </div>
           <button onClick={() => setShowExportModal(true)} disabled={!invoices.length}
-            className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-indigo-700
+            className="flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-indigo-700
               bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300
-              px-3.5 py-2 rounded-xl transition-all disabled:opacity-40">
+              min-h-[44px] px-4 rounded-xl transition-all disabled:opacity-40">
             <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
             </svg>
@@ -273,8 +254,8 @@ export default function InvoiceHistory() {
                       <td className="px-5 sm:px-6 py-3.5 text-slate-400 text-xs whitespace-nowrap">{fmt(inv.timestamp)}</td>
                       <td className="px-5 sm:px-6 py-3.5">
                         <div className="flex items-center gap-3">
-                          <Link href={`/invoice/${inv.id}`} target="_blank" className="text-indigo-600 hover:text-indigo-800 text-xs font-semibold transition">View</Link>
-                          <button onClick={() => resendWhatsApp(inv)} className="text-emerald-600 hover:text-emerald-800 text-xs font-semibold transition">Re-send</button>
+                          <Link href={`/invoice/${inv.id}`} target="_blank" className="flex items-center justify-center min-h-[44px] min-w-[44px] text-indigo-600 hover:text-indigo-800 text-xs font-semibold transition">View</Link>
+                          <button onClick={() => resendWhatsApp(inv)} className="flex items-center justify-center min-h-[44px] min-w-[44px] text-emerald-600 hover:text-emerald-800 text-xs font-semibold transition">Re-send</button>
                         </div>
                       </td>
                     </tr>

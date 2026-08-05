@@ -14,6 +14,7 @@ import { doc, setDoc, getDoc, serverTimestamp, runTransaction } from "firebase/f
 import { auth, db, googleProvider } from "@/lib/firebase";
 import Logo from "@/components/Logo";
 import Link from "next/link";
+import { shopNameSchema, phoneSchema, emailSchema } from "@/lib/validations";
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -39,9 +40,16 @@ function LoginForm() {
     setLoading(true);
     try {
       if (isSignup) {
-        const cleanName = shopName.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
-        if (!cleanName) throw new Error("Please enter a valid shop name.");
+        const nameVal = shopNameSchema.safeParse(shopName);
+        if (!nameVal.success) throw new Error(nameVal.error.errors[0].message);
+        if (phoneNumber) {
+          const phoneVal = phoneSchema.safeParse(phoneNumber);
+          if (!phoneVal.success) throw new Error(phoneVal.error.errors[0].message);
+        }
+        const emailVal = emailSchema.safeParse(email);
+        if (!emailVal.success) throw new Error(emailVal.error.errors[0].message);
         
+        const cleanName = shopName.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
         const cred = await createUserWithEmailAndPassword(auth, email, password);
         try {
           await cred.user.getIdToken(true); // Force token propagation to Firestore
@@ -103,8 +111,13 @@ function LoginForm() {
     setError("");
     setLoading(true);
     try {
+      const nameVal = shopNameSchema.safeParse(shopName);
+      if (!nameVal.success) throw new Error(nameVal.error.errors[0].message);
+      if (phoneNumber) {
+        const phoneVal = phoneSchema.safeParse(phoneNumber);
+        if (!phoneVal.success) throw new Error(phoneVal.error.errors[0].message);
+      }
       const cleanName = shopName.trim().toLowerCase().replace(/[^a-z0-9]/g, "");
-      if (!cleanName) throw new Error("Please enter a valid shop name.");
       
       await runTransaction(db, async (transaction) => {
         const nameRef = doc(db, "shopNames", cleanName);

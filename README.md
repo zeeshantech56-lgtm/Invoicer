@@ -30,6 +30,7 @@ npm install
 4. Project Settings → General → "Your apps" → Add web app → copy the config.
 5. Authentication → Settings → Authorized domains → add `localhost` (already
    there) and later your Vercel domain.
+6. **App Check** → Enforce App Check for both **Firestore** and **Authentication** in the Firebase console using reCAPTCHA v3/Enterprise. The app expects `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` to be set in your environment.
 
 ## 3. Environment variables
 
@@ -37,18 +38,16 @@ npm install
 cp .env.local.example .env.local
 ```
 
-Fill in your Firebase config values, and set `NEXT_PUBLIC_ADMIN_EMAIL` to
-**your own email** — this is the only account that can open `/admin`.
+Fill in your Firebase config values.
 
-## 4. Update Firestore rules with your admin email
+## 4. Add yourself as an Admin
 
-Open `firestore.rules` and replace:
+To access the `/admin` panel, you need to add your User ID (UID) to the `admins` collection in Firestore.
 
-```
-request.auth.token.email == "you@example.com"
-```
-
-with your real admin email (must match `NEXT_PUBLIC_ADMIN_EMAIL` exactly).
+1. Go to Firebase Console → Authentication and find your UID.
+2. Go to Firestore Database.
+3. Create a collection named `admins`.
+4. Add a document where the Document ID is exactly your UID. You don't need to add any fields to it.
 
 Deploy the rules using the Firebase CLI:
 
@@ -107,9 +106,8 @@ git push -u origin main
   product choice, not a security rule — it keeps free-tier Firestore
   reads small as a shop's history grows.
 - **Admin**: `subscribeToAllInvoices` has no date or shopId filter at all.
-  Access is gated by `ADMIN_EMAIL` both in the UI (`ProtectedRoute`) and
-  in Firestore rules (`isAdmin()`), so the restriction can't be bypassed
-  by calling Firestore directly.
+  Access is gated by `isAdmin` both in the UI (`ProtectedRoute`) and
+  in Firestore rules (`isAdmin()`), driven by the `admins` Firestore collection.
 
 ## Suggested next features
 
@@ -118,3 +116,7 @@ git push -u origin main
   invoice page
 - Invoice PDF download button on `/invoice/[id]`
 - Per-shop custom WhatsApp message templates
+
+## Security Recommendations
+
+- **Dependency Updates**: It is strongly recommended to enable Dependabot or Renovate on this repository to automatically keep dependencies updated and secure.

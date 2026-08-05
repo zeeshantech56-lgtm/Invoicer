@@ -5,23 +5,28 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
-import { doc, onSnapshot } from "firebase/firestore";
-import { auth, db, ADMIN_EMAIL } from "./firebase";
+import { doc, onSnapshot, getDoc } from "firebase/firestore";
+import { auth, db } from "./firebase";
 
 const AuthContext = createContext({ user: null, loading: true, isAdmin: false, isBanned: false, userData: null });
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [isBanned, setIsBanned] = useState(false);
   const [userData, setUserData] = useState(null);
 
   useEffect(() => {
     let unsubscribeDoc = null;
 
-    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
+    const unsubscribeAuth = onAuthStateChanged(auth, async (currentUser) => {
       setUser(currentUser);
       if (currentUser) {
+        // Read admin status (using a dedicated admins collection to avoid path segment issues)
+        const adminSnap = await getDoc(doc(db, "admins", currentUser.uid));
+        setIsAdmin(adminSnap.exists());
+
         unsubscribeDoc = onSnapshot(doc(db, "users", currentUser.uid), (snap) => {
           if (snap.exists()) {
             setUserData(snap.data());
@@ -30,6 +35,7 @@ export function AuthProvider({ children }) {
           setLoading(false);
         });
       } else {
+        setIsAdmin(false);
         setIsBanned(false);
         setUserData(null);
         setLoading(false);
@@ -41,8 +47,6 @@ export function AuthProvider({ children }) {
       if (unsubscribeDoc) unsubscribeDoc();
     };
   }, []);
-
-  const isAdmin = !!user && !!ADMIN_EMAIL && user.email === ADMIN_EMAIL;
 
   return (
     <AuthContext.Provider value={{ user, loading, isAdmin, isBanned, userData }}>

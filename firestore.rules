@@ -2,10 +2,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // IMPORTANT: replace this with your real admin email before deploying.
+    // Admin auth check via Firestore document
     function isAdmin() {
       return request.auth != null &&
-             request.auth.token.email == "zeeshantech56@gmail.com";
+             exists(/databases/$(database)/documents/admins/$(request.auth.uid));
     }
 
     // Helper to get the current user's document
@@ -30,6 +30,31 @@ service cloud.firestore {
         )
       );
       return !isBanned && hasActiveAccess;
+    }
+
+    // Rate limiting stopgap: prevent invoice creation if lastInvoiceAt is within 2000ms
+    function isRateLimited() {
+      let userDoc = getUserDoc();
+      return userDoc != null && 'lastInvoiceAt' in userDoc.data && 
+             request.time.toMillis() < (userDoc.data.lastInvoiceAt.toMillis() + 2000);
+    }
+
+    // Hardcoded sum for up to 20 products since rules don't support loops
+    function getProductTotal(data, index) {
+      return data.products.size() > index ? (data.products[index].qty * data.products[index].price) : 0.0;
+    }
+    function calculateProductsSum(data) {
+      return getProductTotal(data, 0) + getProductTotal(data, 1) + getProductTotal(data, 2) + getProductTotal(data, 3) + getProductTotal(data, 4) +
+             getProductTotal(data, 5) + getProductTotal(data, 6) + getProductTotal(data, 7) + getProductTotal(data, 8) + getProductTotal(data, 9) +
+             getProductTotal(data, 10) + getProductTotal(data, 11) + getProductTotal(data, 12) + getProductTotal(data, 13) + getProductTotal(data, 14) +
+             getProductTotal(data, 15) + getProductTotal(data, 16) + getProductTotal(data, 17) + getProductTotal(data, 18) + getProductTotal(data, 19);
+    }
+    function isValidInvoiceMath(data) {
+       let sum = calculateProductsSum(data);
+       let discount = data.get('discountAmount', 0.0);
+       let expectedTotal = sum - discount;
+       return data.products.size() <= 20 &&
+              data.total >= expectedTotal - 2.0 && data.total <= expectedTotal + 2.0;
     }
 
     // Global platform configuration (e.g., announcements)
@@ -59,6 +84,11 @@ service cloud.firestore {
       match /products/{productId} {
         allow read, write: if request.auth != null && request.auth.uid == userId;
       }
+
+      // users/{userId}/paymentEvents — admin audit trail
+      match /paymentEvents/{eventId} {
+        allow read, write: if isAdmin();
+      }
     }
 
     // invoices/{invoiceId}
@@ -68,13 +98,14 @@ service cloud.firestore {
       // invoices.
       allow get: if true;
 
-      // Only the shop owner can create an invoice, and only tagged with
-      // their own UID — this is the multi-tenant write guarantee.
-      // PLUS: They cannot be banned AND must have an active trial or subscription.
+      // TRUST GAP: unit prices are still client-declared and not verified against the shop's actual product catalog — a shop owner could still write internally-consistent-but-fabricated prices into their own invoices. Closing this requires a Cloud Function with the Admin SDK reading live product prices server-side. Not implemented in this pass.
+      // RATE LIMITING STOPGAP: timestamp check against lastInvoiceAt on the user doc. This is not a substitute for robust server-side rate limiting.
       allow create: if request.auth != null &&
                        request.resource.data.shopId == request.auth.uid &&
                        canWriteInvoice() &&
+                       !isRateLimited() &&
                        request.resource.data.total >= 0 &&
+                       isValidInvoiceMath(request.resource.data) &&
                        (request.resource.data.products.size() > 0 ? request.resource.data.total > 0 : true);
 
       // A shop owner can only list/query invoices that are their own.
@@ -97,9 +128,14 @@ service cloud.firestore {
     match /purchaseInvoices/{purchaseInvoiceId} {
       allow read, list: if request.auth != null &&
                             (isAdmin() || resource.data.shopId == request.auth.uid);
+      // TRUST GAP: unit prices are still client-declared and not verified against the shop's actual product catalog — a shop owner could still write internally-consistent-but-fabricated prices into their own invoices. Closing this requires a Cloud Function with the Admin SDK reading live product prices server-side. Not implemented in this pass.
+      // RATE LIMITING STOPGAP: timestamp check against lastInvoiceAt on the user doc. This is not a substitute for robust server-side rate limiting.
       allow create: if request.auth != null &&
                        request.resource.data.shopId == request.auth.uid &&
-                       canWriteInvoice();
+                       canWriteInvoice() &&
+                       !isRateLimited() &&
+                       request.resource.data.total >= 0 &&
+                       isValidInvoiceMath(request.resource.data);
       // Immutable after creation (except by admin if ever needed, but spec says no)
       allow update, delete: if false;
     }

@@ -8,16 +8,18 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { collection, getDocs, doc, updateDoc, setDoc, getDoc } from "firebase/firestore";
+import { collection, getDocs, doc, updateDoc, setDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 import { db, auth } from "@/lib/firebase";
 import { useAuth } from "@/lib/auth-context";
 import { subscribeToAllInvoices } from "@/lib/invoices";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import dynamic from "next/dynamic";
 import Logo from "@/components/Logo";
-import ExportModal from "@/components/ExportModal";
 import Link from "next/link";
+const ExportModal = dynamic(() => import("@/components/ExportModal"), { ssr: false });
 import { TRIAL_DURATION_MS } from "@/lib/constants";
+import { sanitizeCsvField } from "@/lib/csv";
 
 function AdminContent() {
   const { user } = useAuth();
@@ -99,9 +101,9 @@ function AdminContent() {
     const rows = shops.map(s => {
       const joined = s.createdAt?.toDate ? s.createdAt.toDate().toLocaleString() : "";
       return [
-        s.id,
-        `"${(s.shopName || "").replace(/"/g, '""')}"`,
-        s.email,
+        sanitizeCsvField(s.id),
+        `"${sanitizeCsvField(s.shopName || "").replace(/"/g, '""')}"`,
+        sanitizeCsvField(s.email),
         invoicesByShop[s.id] || 0,
         revenueByShop[s.id] || 0,
         s.banned ? "Banned" : "Active",
@@ -181,10 +183,10 @@ function AdminContent() {
     const rows = filteredInvoices.map(inv => {
       const date = inv.timestamp?.toDate ? inv.timestamp.toDate().toLocaleString() : "";
       return [
-        inv.id,
-        `"${(inv.shopName || shopNameById[inv.shopId] || "").replace(/"/g, '""')}"`,
-        `"${(inv.customerName || "").replace(/"/g, '""')}"`,
-        `"${inv.customerPhone || ""}"`,
+        sanitizeCsvField(inv.id),
+        `"${sanitizeCsvField(inv.shopName || shopNameById[inv.shopId] || "").replace(/"/g, '""')}"`,
+        `"${sanitizeCsvField(inv.customerName || "").replace(/"/g, '""')}"`,
+        `"${sanitizeCsvField(inv.customerPhone || "")}"`,
         inv.total || 0,
         `"${date}"`
       ].join(",");
@@ -224,6 +226,9 @@ function AdminContent() {
         <div className="flex flex-col gap-1 items-start">
           <span className="text-[10px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded whitespace-nowrap font-medium border border-blue-200">{tag}</span>
           <span className="text-[10px] text-gray-500 whitespace-nowrap">Expires: {exactDate}</span>
+          {shop.lastGrantRef && (
+            <span className="text-[9px] text-gray-400 whitespace-nowrap">Ref: {shop.lastGrantRef}</span>
+          )}
         </div>
       );
     }
@@ -252,6 +257,12 @@ function AdminContent() {
   const handleAddPlan = async (shop, months, planName) => {
     if (!window.confirm(`Grant ${planName} of access to ${shop.shopName}?`)) return;
     
+    const reference = window.prompt("Enter UPI transaction ID or screenshot reference (REQUIRED):");
+    if (!reference || reference.trim() === "") {
+      alert("Reference is required to grant access.");
+      return;
+    }
+    
     const now = Date.now();
     const currentSub = shop.subscriptionUntil?.toMillis() || 0;
     // Start from now if expired, or extend if currently active
@@ -261,12 +272,24 @@ function AdminContent() {
     await updateDoc(doc(db, "users", shop.id), { 
       subscriptionUntil: newEnd,
       hasSubscribedBefore: true,
-      planType: planName
+      planType: planName,
+      lastGrantRef: reference,
+      lastGrantAdmin: user.uid
+    });
+
+    // Write to audit trail
+    const auditRef = doc(collection(db, "users", shop.id, "paymentEvents"));
+    await setDoc(auditRef, {
+      adminUid: user.uid,
+      planGranted: planName,
+      months: months,
+      reference: reference,
+      timestamp: serverTimestamp()
     });
     
     // Quick mock of firestore timestamp for instant UI update
     const mockTimestamp = { toDate: () => newEnd, toMillis: () => newEnd.getTime() };
-    setShops(shops.map(s => s.id === shop.id ? { ...s, subscriptionUntil: mockTimestamp, hasSubscribedBefore: true, planType: planName } : s));
+    setShops(shops.map(s => s.id === shop.id ? { ...s, subscriptionUntil: mockTimestamp, hasSubscribedBefore: true, planType: planName, lastGrantRef: reference } : s));
   };
 
   const growthData = useMemo(() => {

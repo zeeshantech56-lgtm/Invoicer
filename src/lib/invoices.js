@@ -12,7 +12,8 @@ import {
   onSnapshot,
   serverTimestamp,
   Timestamp,
-  runTransaction
+  runTransaction,
+  limit
 } from "firebase/firestore";
 import { db } from "./firebase";
 
@@ -100,6 +101,9 @@ export async function createInvoice({
       createdAt: serverTimestamp(),
     });
 
+    // Write lastInvoiceAt for rate limiting stopgap
+    transaction.update(doc(db, "users", shopId), { lastInvoiceAt: serverTimestamp() });
+
     return { id: invoiceRef.id, total: finalAmount !== undefined ? Number(finalAmount) : (Number(grandTotal) || 0) };
   });
 }
@@ -128,9 +132,9 @@ export function subscribeToShopInvoices(shopId, callback, onError) {
   });
 }
 
-// Admin-only: subscribes to ALL invoices across every shop, no date limit.
+// Admin-only: subscribes to recent 100 invoices across every shop.
 export function subscribeToAllInvoices(callback) {
-  const q = query(collection(db, "invoices"), orderBy("timestamp", "desc"));
+  const q = query(collection(db, "invoices"), orderBy("timestamp", "desc"), limit(100));
   return onSnapshot(q, (snapshot) => {
     callback(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
   });

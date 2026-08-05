@@ -10,6 +10,7 @@ import { db } from "@/lib/firebase";
 import { calculateGstBreakdown } from "@/lib/gst";
 import { INDIAN_STATES } from "@/lib/constants";
 import { validatePaymentMode } from "@/lib/paymentHelpers";
+import { phoneSchema, gstinSchema, invoiceItemsSchema } from "@/lib/validations";
 
 const emptyProduct = () => ({ name: "", qty: 1, mrp: "", discountPercent: "", price: "", productId: "", hsnCode: "", gstRate: "18" });
 
@@ -159,7 +160,18 @@ export default function InvoiceForm({ shopName }) {
     setSubmitting(true);
     try {
       const clean = calculatedProducts.map(p => ({ name: p.name, qty: Number(p.qty)||0, mrp: p.mrp||"", discountPercent: p.discountPercent||"", price: Number(p.price)||0, productId: p.productId||"", hsnCode: p.hsnCode||"", gstRate: Number(p.gstRate)||0, lineSubtotal: p.lineSubtotal, cgst: p.cgst, sgst: p.sgst, igst: p.igst, totalGst: p.totalGst }));
-      if (clean.some(p => p.qty <= 0 || p.price < 0)) { alert("Quantity must be > 0 and price cannot be negative."); setSubmitting(false); return; }
+      
+      const itemsVal = invoiceItemsSchema.safeParse(clean);
+      if (!itemsVal.success) { alert(itemsVal.error.errors[0].message); setSubmitting(false); return; }
+      if (customerPhone) {
+        const phoneVal = phoneSchema.safeParse(customerPhone);
+        if (!phoneVal.success) { alert(phoneVal.error.errors[0].message); setSubmitting(false); return; }
+      }
+      if (customerGstin) {
+        const gstinVal = gstinSchema.safeParse(customerGstin);
+        if (!gstinVal.success) { alert(gstinVal.error.errors[0].message); setSubmitting(false); return; }
+      }
+
       const numDiscount = Number(discountAmount) || 0;
       if (numDiscount > grandTotal) { alert("Discount cannot exceed Grand Total."); setSubmitting(false); return; }
       let cash = Number(cashAmount) || 0, online = Number(onlineAmount) || 0;
