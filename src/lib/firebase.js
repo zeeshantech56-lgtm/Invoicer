@@ -18,15 +18,15 @@ const firebaseConfig = {
 const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 
 // Initialize App Check (client-side only)
-if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY) {
-  if (process.env.NODE_ENV === "development") {
-    self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
-  }
-  initializeAppCheck(app, {
-    provider: new ReCaptchaV3Provider(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY),
-    isTokenAutoRefreshEnabled: true
-  });
-}
+// if (typeof window !== "undefined" && process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY) {
+//   if (process.env.NODE_ENV === "development") {
+//     self.FIREBASE_APPCHECK_DEBUG_TOKEN = true;
+//   }
+//   initializeAppCheck(app, {
+//     provider: new ReCaptchaV3Provider(process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY),
+//     isTokenAutoRefreshEnabled: true
+//   });
+// }
 
 export const auth = getAuth(app);
 // Explicitly enforce local persistence to prevent session drops in mobile PWAs
