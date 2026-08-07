@@ -258,11 +258,7 @@ function AdminContent() {
   const handleAddPlan = async (shop, months, planName) => {
     if (!window.confirm(`Grant ${planName} of access to ${shop.shopName}?`)) return;
     
-    const reference = window.prompt("Enter UPI transaction ID or screenshot reference (REQUIRED):");
-    if (!reference || reference.trim() === "") {
-      alert("Reference is required to grant access.");
-      return;
-    }
+    const reference = "Admin Granted";
     
     const now = Date.now();
     const currentSub = shop.subscriptionUntil?.toMillis() || 0;
