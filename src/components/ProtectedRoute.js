@@ -55,27 +55,14 @@ export default function ProtectedRoute({ children, adminOnly = false }) {
           <h1 className="text-xl font-bold text-gray-900 mb-2">Access Expired</h1>
           <p className="text-gray-600 mb-6">
             {hasSubscribedBefore 
-              ? "Your subscription has expired. Please choose a bundle to renew your plan." 
-              : "Your 3-day free trial has ended. Please choose a bundle to continue using Invoicer."}
+              ? "Your subscription has expired. Please contact support to renew your plan." 
+              : "Your 3-day free trial has ended. Please contact support to continue using Invoicer."}
           </p>
           
-          <div className="bg-gray-50 border border-gray-200 p-4 rounded-lg mb-6 text-left text-sm text-gray-800">
-            <p className="font-semibold text-gray-900 mb-3 border-b pb-2">Select your bundle & pay via UPI:</p>
-            <ul className="space-y-2 mb-4">
-              <li className="flex justify-between"><span>1 Month:</span> <strong>₹{hasSubscribedBefore ? "300" : "500"}</strong></li>
-              <li className="flex justify-between"><span>3 Months:</span> <strong>₹1,000</strong></li>
-              <li className="flex justify-between text-blue-700 bg-blue-50 px-2 py-1 rounded -mx-2 font-medium">
-                <span>6 Months (Recommended):</span> <strong>₹1,800</strong>
-              </li>
-              <li className="flex justify-between"><span>1 Year:</span> <strong>₹3,000</strong></li>
-            </ul>
-            <div className="mt-4 border-t pt-4 text-center">
-              <p className="mb-2 text-xs text-gray-500 uppercase tracking-wider font-semibold">UPI Number</p>
-              <span className="text-2xl tracking-widest font-mono font-bold text-green-700 block">9202216517</span>
-            </div>
+          <div className="bg-gray-50 border border-gray-200 p-6 rounded-lg mb-6 text-center">
+            <p className="text-gray-800 text-sm font-medium mb-2">Message us on WhatsApp to unlock your account</p>
+            <p className="text-xs text-gray-500">Please provide your shop email: <br/><strong className="text-gray-700">{user?.email}</strong></p>
           </div>
-          
-          <p className="text-gray-500 text-xs mb-6">Message us on WhatsApp with your shop email ({user?.email}) after payment to instantly unlock your account.</p>
         </div>
       </div>
     );
